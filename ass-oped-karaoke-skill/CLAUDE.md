@@ -126,22 +126,27 @@ python -X utf8 ../../scripts/verify.py demo_op.ass
 
 ### 一件要注意的事
 
-`demo_op.built.ass` 與 `demo_op.stale.ass` 裡的 fx 行是**在 Windows 上用 GDI 的字型度量**算出來的。
+`demo_op.built.ass` 與 `demo_op.stale.ass` 裡的 fx 行是**在 Linux（WSL，fontconfig/HarfBuzz）上**算出來的。
+那台機器沒有 Arial，量字退到 Liberation Sans；兩者字寬相容，用 `--font-dir` 指到 Arial 重算也逐位元組相同。
 `verify.py` 的「最新」那一項會重新套用模板再比對，所以：
 
-- 在 **Windows** 上跑：`built` 三項全過、`stale` 只有「最新」不過——這就是案例預期的結果。
-- 在 **Linux／WSL** 上跑：量字方式不同（fontconfig/HarfBuzz），座標會差一點，
-  兩個檔都會是「最新 NO」。要在 Linux 上測就先重新產生 fixture：
+- 在 **Linux／WSL** 上跑：`built` 三項全過；`stale` 在有 Arial（`--font-dir`）時只有「最新」NO，
+  沒有 Arial 時「最新」是無法判定（exit 2）——前者才是案例預期的結果。
+- 在 **Windows** 上跑：GDI 量字（中日文字連結到別的字型），座標不同，兩個檔都會是「最新 NO」。
+  要在 Windows 上測就先在那台機器重新產生（evals 那四份用 Noto CJK 的也一樣）：
 
   ```bash
   cd <技能資料夾>/assets/example
   cp demo_op.ass demo_op.built.ass
   python -X utf8 ../../scripts/build.py demo_op.built.ass --lua demo.lua --templates templates_demo.txt --prune --render
   # stale：把 built 的 code 行裡 DEMO_POP = 120 改成 150，不要重新渲染
+  # （用一份 DEMO_POP = 150 的 demo.lua 跑 luasync.py apply 寫回，不要手改 .ass）
   ```
 
+  evals 的四份是同一套做法，但先把 `demo_op.ass` 兩個樣式的字型換成 Noto Sans CJK JP／TC 再 build。
   然後把兩個檔複製回對應案例的 `files/`（`verify-before-delivery` 用的是 stale 那份，檔名改成
   `demo_op_kfx.ass`，旁邊另放 `DEMO_POP = 120` 的 `demo.lua`——這一題同時考「Lua 與檔內不一致」）。
+  `luasync-sync-and-render` 用 built 那份，旁邊放 `DEMO_POP = 135` 的 `demo.lua`；兩題都附新版 `templates_demo.txt`。
 
   `nc-variant-from-episode` 與 `burn-frames-on-nc` 的 `demo_op.built.ass` 是**本篇時間軸**的版本
   （歌詞在 1:10.97 起、`DEMO_B0 = 70987`），做法是 built 之後再往後移 1678 格：
