@@ -4,6 +4,8 @@ expected_outcome: |
   用 skill 的 variants.py nc（或等價做法）產生 NCOP 版：以**影格數**平移（--shift -1678 --fps 24000/1001，
   而不是換算成毫秒）、把 DEMO_B0 跟著平移、換掉 Video File／Audio File、丟掉舊 fx 行再重新套用模板。
   並且明確提到「拍點原點要跟著平移」這件最容易漏掉的事，以及本篇專用的避讓（如果有）要關掉。
+  成品 demo_op.ncop.ass：歌詞行落在 NCOP 的 0:00:00.98 起（不是被夾成 0:00:00.00）、DEMO_B0 從 70987 變成 1000、
+  fx 行已重建，並回報驗證結果。
   （NC 版在這一題是使用者明確要求的，所以該做；沒有要求時不該自己生。）
 context:
   scaffold_script: place-files.sh

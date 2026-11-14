@@ -118,7 +118,16 @@ python -X utf8 ../../scripts/verify.py demo_op.ass
   # stale：把 built 的 code 行裡 DEMO_POP = 120 改成 150，不要重新渲染
   ```
 
-  然後把兩個檔複製回對應案例的 `files/`。
+  然後把兩個檔複製回對應案例的 `files/`（`verify-before-delivery` 用的是 stale 那份，檔名改成
+  `demo_op_kfx.ass`，旁邊另放 `DEMO_POP = 120` 的 `demo.lua`——這一題同時考「Lua 與檔內不一致」）。
+
+  `nc-variant-from-episode` 與 `burn-frames-on-nc` 的 `demo_op.built.ass` 是**本篇時間軸**的版本
+  （歌詞在 1:10.97 起、`DEMO_B0 = 70987`），做法是 built 之後再往後移 1678 格：
+
+  ```bash
+  python -X utf8 ../../scripts/variants.py nc demo_op.built.ass --shift +1678 --fps 24000/1001 \
+      --const DEMO_B0 --drop-fx --render
+  ```
 
 範例用的字型是 Arial（歌詞雖然是日文，但測試只在乎「輸出是不是一致」，不在乎好不好看），
 所以不需要特別安裝 CJK 字型。真實插槽就不一樣：那首歌要用的字型得真的裝起來，或用 `--font-dir` 指過去。

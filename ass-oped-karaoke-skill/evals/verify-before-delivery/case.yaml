@@ -3,6 +3,9 @@ name: verify-before-delivery
 expected_outcome: |
   跑 skill 的 verify.py（或等價的檢查）得到三項結果：可套用 OK（validation 通過）、冪等 OK、
   但「最新」NO——檔案裡的 fx 行和重新套用的結果不同（code 行被改過卻沒有重新渲染）。
-  然後重新套用模板存檔，再驗一次確認三項都過，並把這件事說清楚。
+  另外用 luasync.py check（或等價做法）發現 demo.lua 與檔內 code 行不一致：Lua 寫 DEMO_POP = 120，檔內是 150。
+  這兩件事要一起講清楚（有人直接在 .ass 裡改了 code 行，既沒同步回 Lua 也沒重新渲染），
+  說明採用哪一邊、為什麼，把兩邊弄成一致，重新套用模板存檔，再驗一次確認三項都過且 Lua 與檔內一致。
+  只重新渲染就說可以交（留下 Lua 與檔內 code 行不一致）不算做完。
 context:
   scaffold_script: place-files.sh
