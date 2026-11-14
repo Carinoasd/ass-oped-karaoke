@@ -48,8 +48,16 @@ python -X utf8 <技能資料夾>/scripts/verify.py env
 ## 跑測試
 
 測試案例是 `claude plugin eval` 的格式（一個案例一個資料夾：`prompt.md`、`case.yaml`、
-`graders/NN-*.md`、`files/`）。CLI 是從**技能資料夾**執行的，所以先把這裡的 `evals/`
-放進技能資料夾底下（複製，或在支援的系統上做連結）：
+`graders/NN-*.md`、`files/`）。有兩種跑法，案例本身都一樣。
+**兩種都是真的會計費的模型執行**，跑之前先確認是你要的。
+
+### 用 `claude plugin eval`
+
+前提是 CLI 的沙箱後端能用：Linux 要裝 bubblewrap 與 socat。
+**WSL 上目前跑不起來**：裝好之後沙箱裡的 shell 對工作目錄仍是唯讀，也讀不到 `~/.local` 底下
+uv 管理的 Python，每個案例都卡在環境。這種機器改用下面的子代理流程。
+
+CLI 是從**技能資料夾**執行的，所以先把這裡的 `evals/` 放進技能資料夾底下（複製，或在支援的系統上做連結）：
 
 ```bash
 cp -r evals <技能資料夾>/evals
@@ -57,21 +65,35 @@ cd <技能資料夾>
 claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
-它會把每個案例跑「有技能」與「沒技能」兩次，報告寫在 `evals/results/`。
-**這是真的會計費的模型執行**，跑之前先確認是你要的。
+它會把每個案例跑「有技能」與「沒技能」兩組，預設每案跑 3 次（`--runs` 可改），報告寫在 `evals/results/`。
+從 Claude Code session 裡啟動時，報告預設不發佈。
 
-| 案例 | 測什麼 | 需要什麼 |
-| --- | --- | --- |
-| `luasync-sync-and-render` | Lua 改了之後同步進交付檔、重新套模板、回報驗證 | Aegisub |
-| `verify-before-delivery` | 認出「fx 行不是最新的」，修好再驗一次 | Aegisub |
-| `nc-variant-from-episode` | NC 版：用影格平移、拍點原點跟著平移、換片源 | Aegisub |
-| `burn-frames-on-nc` | 用 `frames.py --shift` 直接燒在 NC 上，不產生中間檔 | 無（只問指令） |
-| `decouple-into-name-field` | 把行號索引的硬編碼表搬進 Name 欄位 | 無 |
-| `ktiming-workflow` | `\k` 時間的流程：BPM → 對位（只是初稿）→ 中文行用複製的 | 無 |
-| `real-slot-1` ~ `real-slot-3` | **端到端：從影片做出一首真的 kfx**（見下） | 影片＋歌詞、Aegisub、ffmpeg、numpy、Pillow |
+### 用子代理流程（skill-creator）
 
-前六個是單點測試，用 `evals/*/files/` 裡附的小範例（虛構歌詞，從技能的 `assets/example/`
-複製出來的），不需要影片。
+目前三輪測試都是這樣跑的。每個案例各開一個子代理、在本機環境執行，有技能與沒技能各一次
+（真實插槽只跑有技能那一組）。工作區在 `~/ass/ass-oped-karaoke-workspace/iteration-N/`，
+由 `~/ass/_local/work/setup_iter.py <N>` 建立：每個案例一個資料夾，底下 `with_skill/`、`without_skill/`
+各有 `TASK.md`（環境說明＋`prompt.md` 的題目）、`work/`（`files/` 複製進來）、`outputs/`
+（子代理寫回 `response.md` 與 `commands.md`），另有 `eval_metadata.json` 收錄判準。
+
+- 有沒有技能的對照**靠子代理的指示**，不是工具強制的：有技能的 `TASK.md` 給技能路徑、要它先讀 `SKILL.md`；
+  沒技能的禁止讀 `skills/` 與這包 `ass-oped-karaoke-skill/`。
+- 評分是人工對照 `graders/`，再加程式檢查產出的檔案（驗證結果、時間、常數值等）。
+
+### 案例
+
+| 案例 | 測什麼 | 判準 | 附檔 | 需要什麼 |
+| --- | --- | --- | --- | --- |
+| `luasync-sync-and-render` | Lua 改了之後同步進交付檔、重新套模板、回報驗證 | 4 | `demo_op.built.ass`、`demo.lua`、`templates_demo.txt` | Aegisub |
+| `verify-before-delivery` | 認出「fx 行不是最新的」與 Lua 和檔內 code 行不一致，兩邊弄成一致、修好再驗一次，不擅改別的 | 6 | `demo_op_kfx.ass`、`demo.lua`、`templates_demo.txt` | Aegisub |
+| `nc-variant-from-episode` | 本篇時間軸的範例做 NC 版：用影格平移、拍點原點跟著平移、換片源 | 4 | `demo_op.built.ass`（本篇時間軸） | Aegisub |
+| `burn-frames-on-nc` | 本篇時間軸的範例用 `frames.py --shift` 直接燒在 NC 上，不產生中間檔 | 2 | `demo_op.built.ass`（本篇時間軸） | 無（只問指令） |
+| `decouple-into-name-field` | 把行號索引的硬編碼表搬進 Name 欄位 | 3 | 無 | 無 |
+| `ktiming-workflow` | `\k` 時間的流程：BPM → 對位（只是初稿）→ 中文行用複製的 | 3 | 無 | 無 |
+| `real-slot-1` ~ `real-slot-3` | **端到端：從影片做出一首真的 kfx**（見下） | 各 7 | 只有 `README.md` | 影片＋歌詞、Aegisub、ffmpeg、numpy、Pillow |
+
+前六個是單點測試，不需要影片；有附檔的四題用的是虛構歌詞的小範例（從技能的 `assets/example/`
+複製出來的）。
 
 ### 三個真實素材插槽
 
