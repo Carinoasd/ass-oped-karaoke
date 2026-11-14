@@ -107,9 +107,9 @@ python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 
 
 來源行是 `Effect=karaoke` 的 Comment 行，Name 欄位帶效果名與資料。日文行的逐詞 `\k` 這樣抓初稿：
 
-- **強制對位**（主要做法）：`scripts/falign.py run … --write --all --refine --grid B0:BPM`。demucs 先把
-  人聲從伴奏裡分出來，再拿已知的歌詞（漢字查讀音表）決定「哪個字配哪個音」，`--refine` 接著用
-  `align.py` 在分離後的人聲上把每個詞吸到附近的起音（`B0:BPM` 用 `scripts/bpm.py` 量）。它要另一個
+- **強制對位**（主要做法）：`scripts/falign.py run … --write --all`。demucs 先把人聲從伴奏裡分出來，
+  再拿已知的歌詞（漢字查讀音表）決定「哪個字配哪個音」；三首實測的中位誤差都在 50–60 ms。
+  `--refine --grid B0:BPM` 可以再把詞吸到附近的起音，但效果時好時壞，要和沒微調的比過才用。它要另一個
   Python 環境（約 1 GB，第一次跑再下載約 1.3 GB 的模型）：已經裝好就直接用；沒有就**先問使用者**
   要不要裝（`falign.py setup`），不裝就走下一條。
 - **沒有強制對位時**：`scripts/align.py` 從零對位（`--prior spread`）。它只會在「大概的位置」附近找起音，
@@ -228,7 +228,7 @@ lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面�
 | `scripts/verify.py` | `env` / 可套用 / 冪等 |
 | `scripts/bpm.py` | 估 BPM 與第一拍 `B0` |
 | `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k`；`--ass` 疊上檔裡的詞起點；音訊來源可以是分離後的人聲 wav |
-| `scripts/falign.py` | 人聲分離＋強制對位，抓 `\k` 初稿；`--refine` 接著用 `align.py` 微調（`setup` 建環境前先問使用者） |
+| `scripts/falign.py` | 人聲分離＋強制對位，抓 `\k` 初稿；`--refine` 是選用的微調（`setup` 建環境前先問使用者） |
 | `scripts/align.py` | 音訊對位器：在大概的位置附近找起音。強制對位後的微調，或沒有強制對位環境時的替代 |
 
 每支都有 `-h`，docstring 就是它的文件。

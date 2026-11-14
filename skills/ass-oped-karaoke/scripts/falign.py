@@ -7,7 +7,8 @@
     # 報告：每個詞的起點（cs，距行首）與信心；順便產生分離後的人聲 wav
     python -X utf8 falign.py run x.ass --video ncop.mkv --style OPJP --readings readings.json
 
-    # 寫回，接著用 align.py 在分離後的人聲上把每個詞吸到附近的起音（建議的做法）
+    # 選用：寫回後接著用 align.py 在分離後的人聲上把每個詞吸到附近的起音
+    # （三首實測裡兩首變準、一首變差，要和沒微調的比過才用）
     python -X utf8 falign.py run x.ass --video ncop.mkv --style OPJP --readings readings.json \\
         --write --all --refine --grid 88659:162.96
 

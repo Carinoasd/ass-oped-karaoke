@@ -25,8 +25,8 @@ lite 版等使用者說太複雜才做；NC 版在原始字幕本身帶著曲名
    設計從這裡長出來，不要憑空想。配色之外再找質感（見下一節「設計依據不只配色」）。
 2. **建樣式**。歌詞 JP／CHT、credit 各級別、標題。字級統一，縮放用 ScaleX/ScaleY。
 3. **整理歌詞行**。日文行與中文行一一對應（`(Start, End, Name)` 相同），Effect 設 `karaoke`。
-4. **決定 `\k`**（`timing.md`）。先量 BPM（`bpm.py`），日文行用強制對位抓初稿並微調
-   （`falign.py run … --write --all --refine --grid B0:BPM`；環境還沒裝就先問使用者，不裝就改用
+4. **決定 `\k`**（`timing.md`）。先量 BPM（`bpm.py`），日文行用強制對位抓初稿
+   （`falign.py run … --write --all`；環境還沒裝就先問使用者，不裝就改用
    `align.py --prior spread`），然後**逐句**拿分離後的人聲 wav 給 `spec.py --ass` 疊圖修正。
    回報裡講明走的是哪一條路、哪幾句看過、哪幾句沒有人聽過。中文行不對位：跟著唱就從日文行複製
    `\k`（`ktime.py copy`），逐字進退場用純切段的 `\k`，只做整句效果就用 `template line`、不需要 `\k`。
