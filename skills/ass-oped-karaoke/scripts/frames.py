@@ -161,6 +161,14 @@ def main() -> int:
         if a.ass:
             prepare_ass(a.ass, a.shift, a.fps, video, work / "s.ass")
             sub = "s.ass"
+            # 取的每一格上都沒有任何字幕在顯示，多半是時間軸沒對上（位移方向打反、-t 給成另一條時間軸的秒數）
+            shown = [(e.start / 1000, e.end / 1000) for e in oped.load(work / "s.ass").events if not e.comment]
+            if shown and not any(s <= t < e for t in times for s, e in shown):
+                print(
+                    f"警告：取的 {len(times)} 格上都沒有字幕在顯示（字幕在 {min(s for s, _ in shown):.2f}–"
+                    f"{max(e for _, e in shown):.2f} 秒）。檢查 --shift 的正負號，以及 -t 是不是影片自己的時間。",
+                    file=sys.stderr,
+                )
             if a.font_dir:
                 sub += ":fontsdir=" + str(a.font_dir.resolve()).replace("\\", "/").replace(":", r"\:")
         images = grab(video.resolve(), times, work, sub=sub, crop=a.crop, scale=a.scale)
