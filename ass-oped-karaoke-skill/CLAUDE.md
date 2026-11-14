@@ -4,7 +4,7 @@
 `skills/ass-oped-karaoke/`，這包只放測試，不重複存一份技能。
 
 技能內容是三個做完的 OP／ED 特效專案的整合：工作流程、Name 欄位規格、Lua ↔ `code` 行的同步、
-lite／NC／繁簡衍生、`\k` 時間（BPM／頻譜／音訊對位）、驗證與取幀。所有字幕與渲染相關的操作都走
+lite／NC／繁簡衍生、`\k` 時間（BPM／強制對位／頻譜／音訊對位）、驗證與取幀。所有字幕與渲染相關的操作都走
 `aegisub_render` 的 Python API，不呼叫 `aegisub-render.exe`、不自己解析 ASS。
 
 兩個行為上的約定，測試時會看到：
@@ -31,10 +31,11 @@ lite／NC／繁簡衍生、`\k` 時間（BPM／頻譜／音訊對位）、驗證
 | `aegisub_render` | `python-aegisub-render` 這個 repo，以連結方式安裝：`uv add --editable <repo>`；或設環境變數 `AEGISUB_RENDER_ROOT=<repo>`（`scripts/oped.py` 會自己把它的 `src/` 加進 `sys.path`） |
 | 原生模組 | repo 裡 commit 的 `.pyd` 是給 CPython 3.14 / win_amd64 用的；傳過去的壓縮檔**沒有包含**它們，所以測試機要先自己編：`uv run --group build python native/build.py`（Linux／WSL 見 repo README） |
 | Aegisub 3.5.1 | 安裝目錄要有 `automation/autoload/kara-templater.lua`（預設 `C:\Program Files\Aegisub`，可用 `config.py` 或 `--config` 換） |
-| ffmpeg（含 libass） | 取幀（`frames.py`）、量像素（`measure.py --ink`）、頻譜（`spec.py`）、對位（`align.py`）要用 |
+| ffmpeg（含 libass） | 取幀（`frames.py`）、量像素（`measure.py --ink`）、頻譜（`spec.py`）、對位（`align.py`／`falign.py`）要用 |
 | numpy | `bpm.py`／`spec.py`／`align.py` 需要 |
 | Pillow | `frames.py` 拼圖與 `measure.py --ink` 需要（只取一格不拼圖時不需要） |
 | PyAV | 要從真的影片讀時間碼時需要（`uv add --editable "<repo>[video]"`）；給 `--fps` 就不用。**三個真實插槽會用到影片，建議裝** |
+| 強制對位環境（選用） | `falign.py` 用的另一個 Python 環境（torch 2.5.1 CPU、torchaudio、demucs、soundfile），`falign.py setup` 用 uv 建在 `~/.cache/ass-oped-karaoke/fa-venv`（約 1 GB），第一次 `run` 再下載約 1.3 GB 的模型。沒有它技能退回 `align.py`＋頻譜目視；技能會先問使用者才裝，所以要測「強制對位」那條路就先在測試機建好 |
 
 先確認環境：
 

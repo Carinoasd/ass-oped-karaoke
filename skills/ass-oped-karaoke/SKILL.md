@@ -1,6 +1,6 @@
 ---
 name: ass-oped-karaoke
-description: 用 Aegisub kara-templater 做動畫 OP／ED 的卡拉OK特效字幕（歌詞特效＋曲名 credit）：決定 \k 逐詞時間、把每句的效果與資料放進 Name 欄位與 inline fx、把 Lua 特效原始碼同步進 .ass 的 code／template 行、用 aegisub_render 的 Python API 套用模板並渲染，再做 lite／NCOP-NCED／繁簡衍生版與驗證（冪等、fx 行比對、燒字取幀目視）。看到「OP/ED 卡拉OK特效」「kfx」「片頭片尾特效字幕」「歌詞逐字特效」「曲名 credit 排版」「NCOP/NCED 版字幕」「lite 版特效」「\k 時間對不準／要對位」「BPM 拍點」「把 Lua 寫進 code once 行」「套模板後要驗證畫面沒變」「燒字截圖檢查」這類需求就用這個 skill，即使沒提到 kara-templater。只要讀懂或重構既有特效（不是從頭做一首），用 kara-templater-decouple。
+description: 用 Aegisub kara-templater 做動畫 OP／ED 的卡拉OK特效字幕（歌詞特效＋曲名 credit）：決定 \k 逐詞時間、把每句的效果與資料放進 Name 欄位與 inline fx、把 Lua 特效原始碼同步進 .ass 的 code／template 行、用 aegisub_render 的 Python API 套用模板並渲染，再做 lite／NCOP-NCED／繁簡衍生版與驗證（冪等、fx 行比對、燒字取幀目視）。看到「OP/ED 卡拉OK特效」「kfx」「片頭片尾特效字幕」「歌詞逐字特效」「曲名 credit 排版」「NCOP/NCED 版字幕」「lite 版特效」「\k 時間對不準／要對位」「強制對位／人聲分離」「BPM 拍點」「把 Lua 寫進 code once 行」「套模板後要驗證畫面沒變」「燒字截圖檢查」這類需求就用這個 skill，即使沒提到 kara-templater。只要讀懂或重構既有特效（不是從頭做一首），用 kara-templater-decouple。
 ---
 
 # OP／ED 卡拉OK特效字幕
@@ -105,24 +105,27 @@ python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 
 
 ### 2. 歌詞行與 `\k`
 
-來源行是 `Effect=karaoke` 的 Comment 行，Name 欄位帶效果名與資料。逐詞 `\k` 有三條路：
+來源行是 `Effect=karaoke` 的 Comment 行，Name 欄位帶效果名與資料。日文行的逐詞 `\k` 這樣抓初稿：
 
-- 手打（在 Aegisub 裡調，最準。`build.py` 只有給 `--ktiming` 才會改 `\k`，平常重建不會洗掉手調的時間）；
-- 拍點推算：`scripts/bpm.py` 估 BPM 與第一拍，詞落在格點上；`scripts/spec.py --vocal` 把人聲從伴奏裡
-  分出來，疊上拍線用眼睛對；
-- 音訊對位：`scripts/align.py`（人聲起音＋旋律變化＋Viterbi）。它是**修稿工具，不是從零聽寫**：
-  在「大概的位置」附近找起音，所以先要有個大概（手抓的初稿，或 `--prior spread` 的音拍等比例）。
-  報告裡標 `!` 的行、以及它自己說「歌詞相同的行解出不同的節奏」的行都不要採用。
+- **強制對位**（主要做法）：`scripts/falign.py run … --write --all --refine --grid B0:BPM`。demucs 先把
+  人聲從伴奏裡分出來，再拿已知的歌詞（漢字查讀音表）決定「哪個字配哪個音」，`--refine` 接著用
+  `align.py` 在分離後的人聲上把每個詞吸到附近的起音（`B0:BPM` 用 `scripts/bpm.py` 量）。它要另一個
+  Python 環境（約 1 GB，第一次跑再下載約 1.3 GB 的模型）：已經裝好就直接用；沒有就**先問使用者**
+  要不要裝（`falign.py setup`），不裝就走下一條。
+- **沒有強制對位時**：`scripts/align.py` 從零對位（`--prior spread`）。它只會在「大概的位置」附近找起音，
+  從零開始的結果粗得多，只能當成「有東西可以改」。
+- 手調（在 Aegisub 裡）最準。`build.py` 只有給 `--ktiming` 才會改 `\k`，平常重建不會洗掉手調的時間。
 
-**對位器跑完不是時間抓完了，是有東西可以對了。** 它的輸出要逐句拿 `spec.py --vocal --ass` 疊在人聲
-頻譜上看過：詞的起點對得上音符的起點就留著，對不上就改（`ktime.py shift`／改表）。一首 OP 才二十句
-左右，每句一張圖，這一步省不得——從零對位（`--prior spread`）實測只有四成左右的詞落在正確位置附近，
-原樣交出去等於交一份多半是錯的時間。工具自己標成不可信的行尤其不能原樣留著：要嘛對著頻譜修好，
-要嘛在回報裡逐行列出來說「這幾行沒修」。
+**工具跑完不是時間抓完了，是有東西可以對了。** 每一句都要拿 `spec.py --ass` 疊在頻譜上看過
+（有分離後的人聲 wav 就直接拿它當音訊來源，比 `--vocal` 清楚）：詞的起點對得上音符的起點就留著，
+對不上就改（`ktime.py shift`／改表）。強制對位把詞放在「某個音的起點」，但不保證是那個字；
+和聲、半唸半唱、拖長音的句子最容易錯。工具自己標成不可信的詞與行（`falign.py` 的 `?`、`align.py` 的 `!`
+與「歌詞相同的行解出不同的節奏」）當成沒對到：要嘛對著頻譜修好，要嘛在回報裡逐行列出來。
 
-交付時用一張表講清楚每一句的時間是怎麼來的（對著頻譜修過／對位器原樣且看過沒問題／對位器原樣
-沒看／推定），**沒有人聽過的時間就老實說沒聽過**。「全部是對位器原樣」是可以回報的狀態，
-但那代表時間這一步還沒做完，不要把它寫成可以交。
+交付時講明走的是哪一條路（強制對位／`align.py`），再用一張表講清楚每一句的時間是怎麼來的（對著頻譜
+修過／工具原樣且看過沒問題／工具原樣沒看／推定），**沒有人聽過的時間就老實說沒聽過**。
+「全部是工具原樣」是可以回報的狀態，但那代表時間這一步還沒做完，不要把它寫成可以交。
+實測數字與各種做法的差距見 `references/timing.md`。
 
 細節與陷阱見 `references/timing.md`。**沒有 `\k` 的行只有一個長度 0 的音節**，`noblank` 會把它
 當空白跳過，所以來源行一律要有 `{\k…}`。
@@ -236,8 +239,9 @@ lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面�
 | `scripts/cmpfx.py` | 兩個檔的 fx 行比對（多重集合） |
 | `scripts/verify.py` | `env` / 可套用 / 冪等 |
 | `scripts/bpm.py` | 估 BPM 與第一拍 `B0` |
-| `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k`；`--vocal` 只看人聲、`--ass` 疊上檔裡的詞起點 |
-| `scripts/align.py` | 音訊對位器：在既有的大概位置附近找起音，修 `\k` 初稿（會自己標出不可信的行） |
+| `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k`；`--ass` 疊上檔裡的詞起點；音訊來源可以是分離後的人聲 wav |
+| `scripts/falign.py` | 人聲分離＋強制對位，抓 `\k` 初稿；`--refine` 接著用 `align.py` 微調（`setup` 建環境前先問使用者） |
+| `scripts/align.py` | 音訊對位器：在大概的位置附近找起音。強制對位後的微調，或沒有強制對位環境時的替代 |
 
 每支都有 `-h`，docstring 就是它的文件。
 
@@ -251,7 +255,7 @@ lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面�
 | `references/workflow.md` | 完整流程、資料流圖、一次改稿要跑哪些指令 |
 | `references/fields.md` | Name 欄位迷你語言、inline fx、fxgroup、樣式分工（**動手前必讀**） |
 | `references/lua-layout.md` | Lua 分段與壓縮、兩種方言、遞移裁剪、命名規則、覆寫機制 |
-| `references/timing.md` | `\k` 時間：BPM、頻譜、對位器、節拍格點、常見錯誤 |
+| `references/timing.md` | `\k` 時間：BPM、強制對位、頻譜、對位器、各做法的實測、常見錯誤 |
 | `references/variants.md` | lite／NC／繁簡三種衍生版的規則 |
 | `references/api.md` | `aegisub_render` Python API 對照表：哪件事該用哪個函式（**取代所有手寫解析**） |
 | `references/pitfalls.md` | libass、kara-templater／karaskel、ffmpeg、編碼與 shell 的坑（**動手前必讀**） |
