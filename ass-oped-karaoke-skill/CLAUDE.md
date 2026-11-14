@@ -90,7 +90,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 | `nc-variant-from-episode` | 本篇時間軸的範例做 NC 版：用影格平移、拍點原點跟著平移、換片源 | 4 | `demo_op.built.ass`（本篇時間軸） | Aegisub |
 | `burn-frames-on-nc` | 本篇時間軸的範例用 `frames.py --shift` 直接燒在 NC 上，不產生中間檔 | 2 | `demo_op.built.ass`（本篇時間軸） | 無（只問指令） |
 | `decouple-into-name-field` | 把行號索引的硬編碼表搬進 Name 欄位 | 3 | 無 | 無 |
-| `ktiming-workflow` | `\k` 時間的流程：BPM → 對位（只是初稿）→ 中文行用複製的 | 3 | 無 | 無 |
+| `ktiming-workflow` | `\k` 時間的流程：強制對位或 BPM＋對位器出初稿、逐句對頻譜確認；哪些行需要 `\k`；中文行不另外對位 | 3 | 無 | 無 |
 | `real-slot-1` ~ `real-slot-3` | **端到端：從影片做出一首真的 kfx**（見下） | 各 8 | 只有 `README.md` | 影片＋歌詞、Aegisub、ffmpeg、numpy、Pillow |
 
 前六個是單點測試，不需要影片；有附檔的四題用的是虛構歌詞的小範例（從技能的 `assets/example/`

@@ -1,7 +1,9 @@
 schema_version: "1.1"
 name: ktiming-workflow
 expected_outcome: |
-  給出 skill 的時間流程：先用 bpm.py 量 BPM 與第一拍 B0，必要時用 spec.py 用眼睛對，
-  再用 align.py 產生初稿（並強調那只是初稿、確認過的詞要 --pin、寫回一定要 --only），
-  中文行不要重跑對位而是用 ktime.py copy 從日文行複製。
-  也應該提到來源行一定要有 \k（沒有 \k 的行只有一個長度 0 的音節，noblank 會跳過）。
+  給出 skill 的時間流程：日文行用強制對位（falign.py：人聲分離＋已知歌詞，--refine 接 align.py 微調）抓初稿，
+  沒有強制對位環境時先用 bpm.py 量 BPM 與第一拍 B0、再用 align.py 產生初稿；
+  強調那只是初稿，要逐句用 spec.py 對著人聲頻譜檢查（確認過的詞要 --pin、寫回要 --only／--all 想清楚）。
+  中文行不要重跑對位：跟著唱就用 ktime.py copy 從日文行複製。
+  也應該說明哪些行需要 \k：逐音節／逐字模板遇到沒有 \k 的行（只有一個長度 0 的音節）會跳過，
+  所以套這種模板的行要有 \k；只做整句效果、套整行模板的中文行不需要。
