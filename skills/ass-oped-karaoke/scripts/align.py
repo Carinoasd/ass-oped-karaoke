@@ -313,7 +313,12 @@ def write_back(ev: AssDialogue, idx: list[int], new_starts: list[float]) -> bool
         cs[0] = 0
     for i in range(1, len(cs)):
         cs[i] = max(cs[i], cs[i - 1])
-    return ktime.set_cs(ev, cs)
+    # 最後一段的長度沒有東西可以對：行上原本有值就沿用；還是 `\\k0`（剛切好分詞的行）就拉到行尾，
+    # 否則最後一個詞長度 0，逐詞模板會讓它整個不顯示。
+    cs_end = None
+    if ktime._last_duration(ev) == 0:
+        cs_end = max(cs[-1], round((ev.end - ev.start) / 10)) if cs else None
+    return ktime.set_cs(ev, cs, cs_end)
 
 
 # --- 驅動 -------------------------------------------------------------------------------
