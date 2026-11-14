@@ -40,8 +40,26 @@ def syllables(ev: AssDialogue) -> list[tuple[int, str]]:
     base = ev.start
     out = [(round((syl.start_time - base) / 10), syl.text) for syl in parse_karaoke_syllables(ev)]
     # 行首若有 `\k` 之前的內容，解出來會多一個音節；每個 `\k` 標籤剛好對應一項，所以用標籤數對齊
-    if len(out) == len(K_TAG.findall(ev.text)) + 1:
+    tags = len(K_TAG.findall(ev.text))
+    if len(out) == tags + 1:
         out = out[1:]
+    if len(out) != tags:
+        # 解析器會把零長度的空音節併掉（行首的 `{\k0}{\k87}胸` 只回一個音節），
+        # 但寫回時是一個 `\k` 標籤一格，少一格就整行對不上。這種行改成照標籤逐一走。
+        out = _syllables_by_tags(ev)
+    return out
+
+
+def _syllables_by_tags(ev: AssDialogue) -> list[tuple[int, str]]:
+    """一個 `\\k` 標籤一項（起點由前面各標籤的長度累加），文字是到下一個 `\\k` 之前的可見字。"""
+    out: list[tuple[int, str]] = []
+    cs = 0
+    found = list(K_TAG.finditer(ev.text))
+    for i, m in enumerate(found):
+        seg = ev.text[m.end() : found[i + 1].start() if i + 1 < len(found) else len(ev.text)]
+        seg = seg.split("}", 1)[1] if "}" in seg else ""  # 這個標籤所在區塊的剩餘部分
+        out.append((cs, re.sub(r"\{[^}]*(\}|$)", "", seg)))
+        cs += int(m.group(2))
     return out
 
 

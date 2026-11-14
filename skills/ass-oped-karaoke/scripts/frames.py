@@ -57,6 +57,12 @@ def prepare_ass(ass_path: Path, shift: str | None, fps: str | None, video: Path 
             for ev in ass.events:
                 ev.start = clamp_time(ev.start + off.amount)
                 ev.end = clamp_time(ev.end + off.amount)
+        shown = [ev for ev in ass.events if not ev.comment]
+        if shown and all(ev.end <= 0 for ev in shown):
+            raise SystemExit(
+                f"{ass_path.name}: 平移 {shift} 之後所有字幕都落在 0 秒之前，畫面上不會有任何字。\n"
+                "位移的方向或數值不對，或這份字幕不在你以為的那條時間軸上。"
+            )
     dest.write_bytes(ass.serialize())
 
 

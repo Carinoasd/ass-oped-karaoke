@@ -11,6 +11,7 @@
 * `comment()`                          造一條 code／template 註解行
 * `parse_name()` / `format_name()`     Name 欄位的迷你語言（見 references/fields.md）
 * `apply_template()` / `render_bytes()` 套用 kara-templater
+* `missing_fonts()`                    樣式用到、但這台機器沒有的字型
 * `video_of()` / `framerate_of()`      影片與影格↔時間
 * `stats()`                            行數與「同時事件數」
 
@@ -18,6 +19,7 @@ Python 一律以 `-X utf8` 執行（這台機器的 locale 是 cp950）。
 """
 
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -76,6 +78,7 @@ __all__ = [
     "is_karaoke",
     "is_template",
     "load",
+    "missing_fonts",
     "parse_name",
     "parse_time",
     "render_bytes",
@@ -261,6 +264,35 @@ def render_bytes(path: Path, *, settings: Settings | None = None) -> bytes:
     """讀 → 套用模板 → 序列化，回傳「如果存檔會寫出去的那串位元組」（不寫檔）。"""
     ass = load(path)
     return ass.serialize(apply_template(ass, path, settings=settings).save_ui_state)
+
+
+_SUBSTITUTED = re.compile(r"font '(.+?)' is not installed; \S+ substituted '(.+?)'")
+
+
+def missing_fonts(ass: AssFile, font_dirs: list[Path] | None = None) -> list[tuple[str, str]]:
+    """事件行用到的樣式裡，這台機器沒有的字型：[(要的字型, 量字實際退到的字型)]。
+
+    缺字型時 `text_extents` 量的是替代字型，模板算出來的座標就和裝有該字型的機器不同；
+    libass 燒字時又可能退到**另一個**替代字型，於是畫面上的字會互相重疊或錯位。
+    """
+    from aegisub_render import measure_text
+
+    used = {ev.style for ev in ass.events}
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for style in ass.styles:
+        if style.name not in used or style.font.lower() in seen:
+            continue
+        seen.add(style.font.lower())
+        try:
+            warnings = measure_text(style, "Ag", font_dirs=list(font_dirs) if font_dirs else None).warnings
+        except Exception:  # noqa: BLE001  量不出來不是這個檢查該擋的事
+            continue
+        for w in warnings:
+            m = _SUBSTITUTED.search(w)
+            if m:
+                out.append((m.group(1), m.group(2)))
+    return out
 
 
 # --- 影片 -------------------------------------------------------------------------------

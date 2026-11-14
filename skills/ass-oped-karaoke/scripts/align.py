@@ -12,13 +12,26 @@
 
 `--grid B0:BPM`：`B0` 是第 0 拍的絕對毫秒（用 `bpm.py` 量），`BPM` 是速度。
 
+**先驗（`--prior`）決定結果能不能用。** 對位器不是從零聽出每個詞在哪，而是在「大概的位置」附近
+找最像起音的格點：
+
+* `current`：以行上現有的 `\\k` 當大概位置（±0.6 拍）。只有在 `\\k` 已經有人抓過初稿時才對；
+  拿平均分配的假時間來跑，結果只會貼著假時間，等於沒跑。
+* `spread`：不信任現有的 `\\k`，改以「音拍數在行內等比例分配」當大概位置並放寬到 ±2 拍。
+  歌詞剛切好分詞、還沒有任何時間時用這個。
+* `auto`（預設）：一行的詞全部擠在同一個起點（剛切好、全是 `\\k0`）就用 `spread`，否則 `current`。
+
+`--report` 會標出用了哪一種，以及相鄰兩個詞距離不到 1/4 拍的地方（`!`）——那種行不要採用。
+
 做法：
 1. 從影片切出該段立體聲音訊（快取在 `--cache`），只取「置中聲像 × 有音高（HPSS 諧波）」的人聲成分；
 2. 證據 ＝ 人聲頻帶的起音強度 ＋ 旋律音高變化（4096 點 chroma 的前後相似度）；
 3. 每個詞拆成假名音拍（漢字查 `--readings`，非日文就整個詞算一拍），用 Viterbi 放到 1/4 拍格點上：
    節奏先驗（詞內偏八分／十六分、詞間可休止）＋ 證據 ＋ 目前時間的位置先驗（寬鬆）；
    「ー」不需要起音且偏好落在長音上，「ん／っ」只弱要求；
-4. `--phrases`：同一個節奏形狀的樂句重複 ≥3 次時，先互相對齊、平均證據、只解一次節奏再套回每一次。
+4. `--phrases`：**同一個詞**（讀音逐字相同）在行內同一個位置重複 ≥3 次（`--min-repeat`）時，
+   先互相對齊、平均證據、只解一次節奏再套回每一次。只認歌詞相同的重複：音拍形狀剛好一樣的
+   不同詞不是同一個樂句，硬對齊只會把它們擠在一起。
 
 **這只是初稿。** 聽起來不對的詞直接改數字（`ktime.py`）或在 Aegisub 調；確認過的詞加進 `--pin`，
 之後重跑就不會動到它。中文行不要對位，用 `ktime.py copy --from OPJP --to OPCHT` 複製過去。
@@ -242,11 +255,11 @@ class Aligner:
                 break
             shift = new
         anchors = [a + s * self.q for a, s in zip(anchors, shift)]
-        # 重複樂句每次都落在小節的同一個位置：把例外整拍搬過去
+        # 重複樂句每次都落在小節的同一個位置：把例外整拍搬過去（要有過半數才知道誰是例外）
         barpos = [round(((a - self.g0) / self.per) % 4 * 4) % 16 for a in anchors]
-        major = max(set(barpos), key=barpos.count)
+        major = max(sorted(set(barpos)), key=barpos.count)
         for j, a in enumerate(anchors):
-            if barpos[j] != major:
+            if barpos[j] != major and barpos.count(major) * 2 > len(barpos):
                 opts = [a + k * self.q for k in range(-8, 9) if (barpos[j] + k) % 16 == major]
                 anchors[j] = min(opts, key=lambda o: abs(o - a))
         rel = [k * self.q for k in range(-6, int(span_beats * 4))]
@@ -294,6 +307,10 @@ def write_back(ev: AssDialogue, idx: list[int], new_starts: list[float]) -> bool
         if i not in idx:
             after = next((cs[j] for j in range(i + 1, len(cs))), cs[i])
             cs[i] = after
+    # 第一個 `\k` 的起點就是行首。行首的空音節（`{\k0}` 或 `{\k30}` 這種前導）因此從 0 開始、
+    # 長到第一個詞為止；不這樣做的話前導長度會被壓成 0，整行的詞跟著提早。
+    if cs:
+        cs[0] = 0
     for i in range(1, len(cs)):
         cs[i] = max(cs[i], cs[i - 1])
     return ktime.set_cs(ev, cs)
@@ -311,7 +328,15 @@ def main() -> int:
     ap.add_argument("--readings", type=Path, help="漢字讀音表 JSON（作品自己的）")
     ap.add_argument("--pin", nargs="*", default=[], help="釘住的詞：行起點:詞索引，例如 0:22:39.17:3")
     ap.add_argument("--only", nargs="*", default=[], help="只處理／只寫回這些行（行的開始時間）")
-    ap.add_argument("--phrases", action="store_true", help="重複樂句用模板比對（≥3 次才會啟用）")
+    ap.add_argument("--phrases", action="store_true", help="同一個詞在行內同位置重複出現時用模板比對")
+    ap.add_argument("--min-repeat", type=int, default=3, help="--phrases：至少重複幾次才啟用（預設 3）")
+    ap.add_argument(
+        "--prior",
+        choices=["auto", "current", "spread"],
+        default="auto",
+        help="詞的大概位置從哪來：current＝現有的 \\k；spread＝音拍等比例；auto＝全擠在同一點的行用 spread",
+    )
+    ap.add_argument("--sigma", type=float, help="位置先驗的寬度（拍）；預設 current 0.6、spread 2.0")
     ap.add_argument("--report", action="store_true", help="印出 目前 → 對位結果（以拍為單位）")
     ap.add_argument("--write", action="store_true", help="寫回 .ass（一定要配 --only）")
     ap.add_argument("--cache", type=Path, help="音訊與特徵的快取資料夾（預設 .align-cache）")
@@ -352,20 +377,31 @@ def main() -> int:
         plans.append({"ev": ev, "words": words, "starts": starts, "idx": idx, "units": units})
 
     fixed: dict[tuple[int, int], float] = {}
+    spread_lines = 0
+    squeezed: list[str] = []
+    phrase_fallback: list[str] = []
     if a.phrases:
         groups: dict[tuple, list[tuple[int, int]]] = {}
         for li, p in enumerate(plans):
             for wi, w in enumerate(p["words"]):
-                shape = tuple(k for _, k in morae(w, readings))
-                groups.setdefault((shape, wi), []).append((li, wi))
-        for (shape, _), occ in groups.items():
-            if len(occ) < 3:
+                said = tuple(morae(w, readings))  # 讀音逐字相同才算同一個樂句
+                groups.setdefault((said, wi), []).append((li, wi))
+        for (said, _), occ in groups.items():
+            if len(occ) < max(2, a.min_repeat):
                 continue
-            units = [(0, j, k) for j, k in enumerate(shape)]
+            units = [(0, j, k) for j, (_, k) in enumerate(said)]
             anchors = [plans[li]["starts"][wi] for li, wi in occ]
             offs, anchors = al.template(units, anchors, 2.0)
             for (li, wi), anc in zip(occ, anchors):
                 fixed[(li, wi)] = anc + offs.get(0, 0.0)
+        # 每個詞是各自對齊的，所以同一行裡可能互相打架（後面的詞被搬到前面的詞之前或貼在一起）。
+        # 那代表這一行的重複樂句沒對上：整行放棄模板結果，退回一般的逐行對位。
+        for li, p in enumerate(plans):
+            got = [fixed[(li, wi)] for wi in range(len(p["words"])) if (li, wi) in fixed]
+            if any(b - a < al.q for a, b in zip(got, got[1:])):
+                for wi in range(len(p["words"])):
+                    fixed.pop((li, wi), None)
+                phrase_fallback.append(ass_formatted(p["ev"].start))
 
     for li, p in enumerate(plans):
         ev: AssDialogue = p["ev"]
@@ -373,24 +409,80 @@ def main() -> int:
         for wi in range(len(p["words"])):
             if (stamp, wi) in pins:
                 fixed[(li, wi)] = p["starts"][wi]
-        prior = {wi: fixed.get((li, wi), t) for wi, t in enumerate(p["starts"])}
+        # 大概位置：現有的 \k，或（沒有可用的 \k 時）音拍數在行內等比例分配
+        usable = len(p["words"]) < 2 or len(set(p["starts"])) > 1
+        mode = a.prior if a.prior != "auto" else ("current" if usable else "spread")
+        if mode == "spread":
+            total = len(p["units"])
+            before = [sum(1 for u in p["units"] if u[0] < wi) for wi in range(len(p["words"]))]
+            base = [ev.start + (ev.end - ev.start) * b / total for b in before]
+            sigma = a.sigma or 2.0
+            spread_lines += 1
+        else:
+            base = p["starts"]
+            sigma = a.sigma or 0.6
+        prior = {wi: fixed.get((li, wi), t) for wi, t in enumerate(base)}
         if all((li, wi) in fixed for wi in range(len(p["words"]))):
             res = prior
         else:
-            res = al.align_words(p["units"], prior, ev.start, ev.end)
+            res = al.align_words(p["units"], prior, ev.start, ev.end, sigma)
             res = {wi: fixed.get((li, wi), res[wi]) for wi in range(len(p["words"]))}
         new = [min(max(res[wi], ev.start), ev.end - 100) for wi in range(len(p["words"]))]
         for i in range(1, len(new)):
             new[i] = max(new[i], new[i - 1] + 60)
         p["new"] = new
+        tight = [i for i in range(1, len(new)) if new[i] - new[i - 1] < 0.9 * al.q]
+        if tight:
+            squeezed.append(stamp)
         if a.report:
             def beat(t: float) -> float:
                 return (t - al.g0) / al.per
 
             cols = "  ".join(
-                f"{w}:{beat(o):.2f}->{beat(n):.2f}" for w, o, n in zip(p["words"], p["starts"], new)
+                f"{'!' if i in tight else ''}{w}:{beat(o):.2f}->{beat(n):.2f}"
+                for i, (w, o, n) in enumerate(zip(p["words"], p["starts"], new))
             )
-            print(f"{stamp}  {cols}")
+            print(f"{stamp}  {'〔等比例先驗〕' if mode == 'spread' else ''}{cols}")
+
+    if spread_lines:
+        print(
+            f"{spread_lines} 行沒有可用的 \\k（或指定了 --prior spread），以音拍等比例當大概位置：結果比有初稿時粗，更要聽過。",
+            file=sys.stderr,
+        )
+    # 自我檢查：歌詞逐詞相同的行（副歌）解出來的節奏應該一樣。不一樣就是證據不夠，兩次都不能信。
+    # （副歌第二次常會換一兩個詞，所以條件是：每個詞的音拍形狀都相同，而且過半的詞逐字相同。）
+    same: dict[tuple, list[dict]] = {}
+    for p in plans:
+        if len(p["words"]) > 1:
+            shape = tuple(tuple(k for _, k in morae(w, readings)) for w in p["words"])
+            same.setdefault(shape, []).append(p)
+    unstable: list[str] = []
+    for group in same.values():
+        first = group[0]
+        alike = [
+            p for p in group
+            if sum(x == y for x, y in zip(p["words"], first["words"])) * 2 > len(first["words"])
+        ]
+        rhythms = {tuple(round((t - p["new"][0]) / al.q) for t in p["new"]) for p in alike}
+        if len(rhythms) > 1:
+            unstable.append("／".join(ass_formatted(p["ev"].start) for p in alike))
+    if unstable:
+        print(
+            f"歌詞相同的行解出不同的節奏（{'；'.join(unstable)}）：這幾行的結果不可信。\n"
+            "先把其中一次用 spec.py --vocal 對好、寫回並 --pin，再用 ktime.py 把同樣的分段時間套到另一次。",
+            file=sys.stderr,
+        )
+    if phrase_fallback:
+        print(
+            f"--phrases：{len(phrase_fallback)} 行的重複樂句互相對不齊，已退回逐行對位：{' '.join(phrase_fallback)}",
+            file=sys.stderr,
+        )
+    if squeezed:
+        print(
+            f"{len(squeezed)} 行有相鄰的詞擠在 1/4 拍以內（報告裡標 ! 的詞）：{' '.join(squeezed)}\n"
+            "這些行的結果不可信，不要寫回；改用 spec.py 用眼睛對，或先在 Aegisub 抓個大概再跑。",
+            file=sys.stderr,
+        )
 
     if a.write:
         n = 0
