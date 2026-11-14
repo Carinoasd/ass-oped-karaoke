@@ -36,27 +36,27 @@ Comment: 0,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,karaoke,{\k45}ひかり{\k40} {\k
 Comment: 0,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,karaoke,{\k45}向著{\k40} {\k45\-hi}光的{\k50}前{\k60}方
 Comment: 0,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,karaoke,{\k50}あたらしい{\k45}あさ{\k55}が{\k60}くる
 Comment: 0,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,karaoke,{\k50}嶄新的{\k45}早晨{\k55}就要{\k60}來臨
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(826.0,1004.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur6.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}ひかり
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(826.0,1004.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}ひかり
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(857.3,1004.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur6.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}ひかり
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(857.3,1004.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}ひかり
 Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(968.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}の
 Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(968.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}の
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1062.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}さき
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1062.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}さき
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1156.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}へ
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1156.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}へ
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(826.0,907.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur6.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}向著
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(826.0,907.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}向著
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1039.2,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}さき
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1039.2,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}さき
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1109.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}へ
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoJP,,0,0,0,fx,{\an5\pos(1109.7,1004.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}へ
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(857.3,907.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur6.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}向著
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(857.3,907.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}向著
 Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(968.7,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}光的
 Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(968.7,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}光的
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1062.7,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}前
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1062.7,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}前
-Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1125.4,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}方
-Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1125.4,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}方
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(803.3,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}あたらしい
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1022.7,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(30,210,\fscx100\fscy100)\alpha&HFF&\t(30,150,\alpha&H00&)}あさ
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1116.7,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}が
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1210.7,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}くる
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(772.0,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}嶄新的
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(928.7,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(30,210,\fscx100\fscy100)\alpha&HFF&\t(30,150,\alpha&H00&)}早晨
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(1054.0,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}就要
-Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(1179.4,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}來臨
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1039.2,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}前
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1039.2,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}前
+Dialogue: 1,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1086.2,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur6.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}方
+Dialogue: 2,0:00:01.00,0:00:05.00,DemoCHT,,0,0,0,fx,{\an5\pos(1086.2,907.0)\1c&H66CCFF&\3c&H66CCFF&\blur0.0\fscx120\fscy120\t(120,300,\fscx100\fscy100)\alpha&HFF&\t(120,240,\alpha&H00&)}方
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(842.5,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}あたらしい
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1007.0,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(30,210,\fscx100\fscy100)\alpha&HFF&\t(30,150,\alpha&H00&)}あさ
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1077.5,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}が
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoJP,top plain,0,0,0,fx,{\an5\pos(1148.0,76.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}くる
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(819.0,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(0,180,\fscx100\fscy100)\alpha&HFF&\t(0,120,\alpha&H00&)}嶄新的
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(936.5,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(30,210,\fscx100\fscy100)\alpha&HFF&\t(30,150,\alpha&H00&)}早晨
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(1030.5,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx135\fscy135\t(60,240,\fscx100\fscy100)\alpha&HFF&\t(60,180,\alpha&H00&)}就要
+Dialogue: 2,0:00:05.20,0:00:09.00,DemoCHT,top plain,0,0,0,fx,{\an5\pos(1124.5,173.0)\1c&HFFFFFF&\3c&HFFFFFF&\blur0.0\fscx120\fscy120\t(90,270,\fscx100\fscy100)\alpha&HFF&\t(90,210,\alpha&H00&)}來臨

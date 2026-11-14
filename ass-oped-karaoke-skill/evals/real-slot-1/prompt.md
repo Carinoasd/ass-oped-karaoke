@@ -5,17 +5,15 @@ timeout_seconds: 5400
 allowed_tools: [Read, Glob, Grep, Skill, Write, Edit, Bash]
 ---
 
-<!-- 插槽 1：真實素材的端到端測試（從影片做出 kfx）。
-     把影片與歌詞放進 files/，再把下面換成真正的題目。沒填之前這個案例會失敗，
-     平常跑測試用 tag 排除（這個案例多帶 real / manual）。 -->
+幫我做《關於我在無意間被隔壁的天使變成廢柴這件事》第一季 OP「ギフト」的卡拉OK特效字幕。
 
-幫我做《<填入：作品名>》<填入：OP 或 ED>的卡拉OK特效字幕。
-
-- 影片：`<填入：影片檔名>`（<填入：解析度與幀率，例如 1920x1080、24000/1001>）
-- 歌詞：`<填入：歌詞 .ass 檔名>`，日文行與中文行一一對應，行的時間已經對好了，逐詞 `\k` 還沒抓
-- <填入：其他條件，例如字型、曲名 credit 的內容、要不要壓在 NC 上>
+- 影片：`otonari-no-tenshisama_op_ncop_bdrip.mkv`（NCOP，1920x1080、24000/1001，有聲音）。字幕的時間就是對這支 NCOP 的
+- 歌詞：`otonari-no-tenshisama_op_ncop_bdrip.ass`，日文行與中文行一一對應，行的時間已經對好了，逐詞 `\k` 還沒抓。
+  現在的歌詞行只是普通的 Dialogue（淡入淡出加模糊），檔案裡另外有排好的標題字和曲名 credit
+- `S01OP.mp4` 是帶 staff 字幕的 OP 本篇版，**只用來確認 staff 文字的風格**，不要拿它當底片、也不用另外做一份對它時間軸的版本
+- 字型沿用檔案裡的設定
 
 先看影片決定設計（配色、字型、進退場節奏要跟原片對得上），再把逐詞時間抓出來，
 最後給我可以直接交的檔案，附上驗證結果與幾張燒在影片上的截圖。
 
-Input files: <填入：files/ 裡的檔名，逗號分隔>
+Input files: otonari-no-tenshisama_op_ncop_bdrip.mkv, otonari-no-tenshisama_op_ncop_bdrip.ass, S01OP.mp4
