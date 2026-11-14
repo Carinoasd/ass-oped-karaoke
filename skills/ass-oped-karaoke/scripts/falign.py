@@ -23,7 +23,8 @@
 **它還是只產生初稿。** 強制對位會把詞放在「某個音的起點」，但那個音不一定就是那個字——
 拖長音、轉音、和聲、半唸半唱的句子最容易錯。跑完之後：
 
-* 信心低的詞（報告裡前面有 `?`）與整行信心都低的行，要當成沒對到；
+* 信心低的詞（報告裡前面有 `?`）錯的機率大約是其他詞的兩倍，優先看；整行信心都低的行當成沒對到。
+  但信心高不代表對——高信心的詞也有一成多差超過半拍，所以沒被標的句子一樣要看；
 * 逐句疊在**分離後的人聲**頻譜上看（跑完會印出 `spec.py` 的指令；用分離後的 wav 當音訊來源，
   伴奏已經拿掉了，比 `--vocal` 清楚得多）；
 * 沒有人聽過就老實說沒聽過。
@@ -53,7 +54,10 @@ import oped  # noqa: E402
 from oped import ass_formatted  # noqa: E402
 
 DEFAULT_ENV = Path.home() / ".cache" / "ass-oped-karaoke" / "fa-venv"
-LOW = 0.30  # 低於這個信心就當成沒對到
+# 低於這個信心的詞在報告裡標 `?`。三首歌、358 個詞對照有人聽過的參考時點：信心低於 0.20 的詞
+# 約三成差超過半拍，其餘約一成六——是「比較可能錯」的提示，不是對錯的判定；0.20–0.30 那一段
+# 並不比高信心的差，所以門檻不設在 0.30（那樣快歌幾乎每句都會被標）。
+LOW = 0.20
 KANJI = re.compile(r"[㐀-鿿豈-﫿々〆]")
 
 # --- 假名 → 羅馬字（MMS_FA 的字彙只有 a-z） ------------------------------------------------
@@ -237,8 +241,9 @@ def cmd_run(a: argparse.Namespace) -> int:
             new[i] = max(new[i], new[i - 1] + 30)
         known = [s for s in scores if s is not None]
         mean = sum(known) / len(known) if known else 0.0
-        if mean < LOW or any(s is None or s < LOW for s in scores):
-            weak_lines.append(stamp)
+        low = sum(1 for s in scores if s is None or s < LOW)
+        if mean < LOW or low * 3 >= len(scores) or (low and len(scores) <= 3):
+            weak_lines.append(stamp)  # 整行都低、三分之一以上的詞低、或短句裡有低的
         cols = "  ".join(
             f"{'?' if s is None or s < LOW else ''}{w}:{round((t - ev.start) / 10)}"
             + ("" if s is None else f"({s:.2f})")
@@ -250,8 +255,9 @@ def cmd_run(a: argparse.Namespace) -> int:
 
     if weak_lines:
         print(
-            f"{len(weak_lines)} 行有信心低於 {LOW:.2f} 或沒對到的詞（報告裡標 ? 的）：{' '.join(weak_lines)}\n"
-            "這些詞當成沒對到：對著分離後的人聲頻譜修，或在回報裡逐行列出來。",
+            f"{len(weak_lines)} 行有不少信心低於 {LOW:.2f} 或沒對到的詞（報告裡標 ? 的）：{' '.join(weak_lines)}\n"
+            "這幾行優先對著分離後的人聲頻譜修，或在回報裡逐行列出來。其他行裡零星標 ? 的詞也先看；"
+            "沒被標的不代表對，逐句還是要看過。",
             file=sys.stderr,
         )
     if a.write:
