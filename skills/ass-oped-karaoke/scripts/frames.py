@@ -122,12 +122,16 @@ def pick_extremes(samples: list[tuple[float, float]], windows: list[tuple[float,
 
 
 def frame_seconds(video: Path, fps: str | None) -> float:
-    """一格的長度（秒）。讀不到幀率時用 0.05（比 24fps 的一格略長，判斷只會更寬鬆）。"""
+    """一格的長度（秒）。讀不到幀率時用 0.05（比 24fps 的一格略長，判斷只會更寬鬆）。
+
+    只是「沒有字幕」提示的容許誤差，所以讀不到時間碼（`framerate_of` 以 SystemExit 回報：
+    沒裝 PyAV、影片打不開、時間戳不足）就退回預設值；其他例外是程式的錯，照常拋出。
+    """
     try:
         fr = oped.framerate_of(video, fps)
-        return (fr.time_at_frame(1, "start") - fr.time_at_frame(0, "start")) / 1000 or 0.05
-    except (Exception, SystemExit):
+    except SystemExit:
         return 0.05
+    return (fr.time_at_frame(1, "start") - fr.time_at_frame(0, "start")) / 1000 or 0.05
 
 
 def grab(video: Path, times: list[float], work: Path, *, sub: str | None, crop: str | None, scale: float) -> list[Path]:

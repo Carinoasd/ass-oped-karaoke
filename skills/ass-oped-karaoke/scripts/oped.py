@@ -319,9 +319,19 @@ def framerate_of(video: Path | None = None, fps: str | None = None):
     if video is None:
         raise SystemExit("需要 --fps 或一個能讀出時間碼的影片")
     from aegisub_render.video.probe import probe_video
+    from aegisub_render.video.vfr import FramerateError
 
-    info = probe_video(Path(video))
-    return Framerate.from_timecodes(list(info.timecodes))
+    # probe_video 回傳的是每一格的時間戳（ms，`VideoInfo.timestamps`），和 Aegisub 載入影片時一樣
+    # 拿它建 Framerate（VFR 也正確）。讀不到時間碼是使用者能處理的事（裝 PyAV、改給 --fps），
+    # 所以轉成 SystemExit；其他例外照常拋出，不要被當成「讀不到」吞掉。
+    try:
+        # IndexError：檔案裡沒有視訊串流（probe_video 取 streams.video[0]）
+        info = probe_video(Path(video))
+        if len(info.timestamps) < 2:
+            raise FramerateError(f"只讀到 {len(info.timestamps)} 個影格的時間戳")
+        return Framerate.from_timecodes(info.timestamps)
+    except (OSError, ValueError, IndexError, FramerateError) as e:
+        raise SystemExit(f"讀不出 {video} 的時間碼（{e or type(e).__name__}）；改給 --fps，例如 --fps 24000/1001") from e
 
 
 # --- 統計 -------------------------------------------------------------------------------
