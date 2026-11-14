@@ -48,7 +48,7 @@ python -X utf8 scripts/cmpfx.py backup.ass x.ass        # 重構的話：期待 
 只改了 Name 欄位／時間／樣式（在 Aegisub 裡改的）：
 
 ```bash
-python -X utf8 scripts/build.py x.ass --render --keep-timing
+python -X utf8 scripts/build.py x.ass --render          # 不給 --ktiming 就不會動到 \k
 ```
 
 改完交付檔之後，**已經存在的**衍生版都要重做一次（`variants.py nc` / `lite`），再各自驗證。

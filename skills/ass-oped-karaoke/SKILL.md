@@ -43,6 +43,11 @@ description: 用 Aegisub kara-templater 做動畫 OP／ED 的卡拉OK特效字�
 
 多做一個版本就多一份要跟著改、跟著驗證的東西。不確定就問，不要預設全做。
 
+**歌詞與 credit 的文字也是使用者的東西，照原樣交回去。** 你的工作是幫這些字加時間與特效，
+不是校稿：分段可以切、標籤可以加，但字不要換。看到像是筆誤的地方（OP 的 credit 寫著
+「エンディングテーマ」、日中兩行對不上、漏字）就在回報裡指出來讓使用者決定，不要順手改掉——
+那可能是原片本來就這樣寫，也可能是使用者刻意的，而被悄悄改過的字最難被發現。
+
 ## 專案骨架
 
 一首歌一個資料夾，`fx-build/`（或 `scripts/`）放產生器，交付檔放上層：
@@ -74,6 +79,11 @@ python -X utf8 scripts/verify.py env          # aegisub_render、Aegisub 安裝�
 素材清單：原始歌詞 .ass（日文／中文行、時間已對正片）、正片、原片的 staff 字幕畫面
 （設計依據，見第 1 步）、特殊字型；要做 NC 版時才需要 NCOP／NCED。
 
+**字型要先確認**：樣式指定的字型這台機器沒有時，模板量字會退到一個替代字型、libass 燒字又可能
+退到另一個，於是算出來的座標和畫出來的字對不上（詞互相重疊）。`verify.py x.ass` 會列出缺的字型；
+處理方式見 `references/pitfalls.md` 的「量測」。在缺字型的機器上做出來的檔，回報時要講明
+「座標是照替代字型算的，要在裝有該字型的機器上重新套用一次」。
+
 **順便看一件事**：原始字幕裡有沒有曲名 credit（オープニングテーマ／片頭曲、作詞作曲、演唱者那幾行）。
 有的話就是在告訴你「這份要壓在 NC 上」，NC 版可以主動做；沒有的話不要自作主張（見「要交什麼」）。
 
@@ -92,9 +102,14 @@ python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 
 
 來源行是 `Effect=karaoke` 的 Comment 行，Name 欄位帶效果名與資料。逐詞 `\k` 有三條路：
 
-- 手打（在 Aegisub 裡調，最準，`--keep-timing` 會保留）；
-- 拍點推算：`scripts/bpm.py` 估 BPM 與第一拍，詞落在格點上；
-- 音訊對位：`scripts/align.py`（人聲起音＋旋律變化＋Viterbi），只能算初稿，聽過再把確認的詞 pin 住。
+- 手打（在 Aegisub 裡調，最準。`build.py` 只有給 `--ktiming` 才會改 `\k`，平常重建不會洗掉手調的時間）；
+- 拍點推算：`scripts/bpm.py` 估 BPM 與第一拍，詞落在格點上；`scripts/spec.py --vocal` 把人聲從伴奏裡
+  分出來，疊上拍線用眼睛對；
+- 音訊對位：`scripts/align.py`（人聲起音＋旋律變化＋Viterbi）。它是**修稿工具，不是從零聽寫**：
+  在「大概的位置」附近找起音，所以先要有個大概（手抓的初稿，或 `--prior spread` 的音拍等比例）。
+  報告裡標 `!` 的行、以及它自己說「歌詞相同的行解出不同的節奏」的行都不要採用。
+
+三條路做出來的都只是初稿，**沒有人聽過的時間就老實說沒聽過**，並指出哪幾句最沒把握。
 
 細節與陷阱見 `references/timing.md`。**沒有 `\k` 的行只有一個長度 0 的音節**，`noblank` 會把它
 當空白跳過，所以來源行一律要有 `{\k…}`。
@@ -109,6 +124,15 @@ python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 
 
 所以逐字切段寫成 `{\k42\-n}字`（24000/1001）或 `{\k33\-n}字`（30000/1001）。
 換片源幀率時這個數字要跟著換——整首用同一個值，看到混用就是有人複製貼上忘了改。
+
+**中文行的 `\k` 看它的特效跟不跟著唱：**
+
+- 中文行也要跟著歌聲逐詞變化（和日文行同樣的段數）→ 不要對中文行另外對位，
+  `ktime.py copy --from <日文樣式> --to <中文樣式>` 把日文行的分段時間複製過去。
+- 中文行只是整句進退場、或逐字錯開但不對歌聲（中文字數和日文音節本來就對不上）→
+  用上面那種純切段的 `\k42`。
+
+兩種都對，選哪一種要和設計一致，並在回報裡講是哪一種。
 
 ### 3. 把資料放進欄位
 
@@ -133,11 +157,12 @@ python -X utf8 scripts/luasync.py extract op_kfx.ass -o fx-build/op.lua       # 
 
 ```bash
 python -X utf8 scripts/build.py op_kfx.ass --lua fx-build/op.lua --render   # 換模板行＋渲染
-python -X utf8 scripts/build.py op_kfx.ass --render --keep-timing           # 保留手調的 \k
+python -X utf8 scripts/build.py op_kfx.ass --render                         # 只重新套用（改過 Name／時間／樣式之後）
 ```
 
 渲染一律走 `aegisub_render` 的 Python API（`ScriptRender` 就地套用，或 `render()` 連檔案一起處理），
 **不要**呼叫 `aegisub-render.exe`：那是給 shell 用的包裝，在 Python 裡多一次程序啟動又拿不到錯誤物件。
+`build.py` 只動 code／template 行；`\k`、Name、樣式都原樣保留，只有給 `--ktiming <表>` 時才會改 `\k`。
 
 ### 6. 驗證
 
@@ -150,6 +175,10 @@ python -X utf8 scripts/frames.py shot.png --ass op_kfx.ass --video ncop.mp4 --sh
 `--shift` 接受時間戳或影格數（和 `macro offset` 同一套語法），所以把本篇時間軸的交付檔直接燒在
 NC 影片上檢查不需要先產生中間檔。
 
+`verify.py` 的結束碼：0 全過、1 有項目沒過、2「最新」無法判定（這台機器缺樣式的字型）。
+遇到 2 **不要為了變綠就重新渲染覆蓋交付檔**——那會把正確的座標換成替代字型的座標；
+先把字型補上（或 `--font-dir`）再驗。
+
 ### 7. 衍生版（**有條件才做**，見上面「要交什麼」）
 
 lite 要等使用者說太複雜；NC 版在原始字幕本身帶 credit 時可以主動做，否則等指示。
@@ -160,7 +189,9 @@ python -X utf8 scripts/variants.py lite op_kfx.ass -o op_kfx_lite.ass --lua fx-b
 python -X utf8 scripts/variants.py lang op_kfx.ass --check     # 繁簡孿生行的 +TC/+SC 後綴檢查
 ```
 
-NC 版要連 code 行裡的拍點原點一起平移（`--const B0`），這是最容易漏掉的一件事。
+NC 版要連 code 行裡的拍點原點一起平移（`--const <你的 Lua 裡那個常數的名字>`，例如 `--const OP_B0`），
+這是最容易漏掉的一件事。名字對不到、或有歌詞行會被平移到 0 秒之前時，`variants.py` 會直接報錯
+不寫檔——後者代表位移的方向／數值不對，或手上這份字幕不在你以為的那條時間軸上，先回頭確認再做。
 lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面，不要複製一份程式碼。
 三種衍生版的完整規則見 `references/variants.md`。
 
@@ -183,8 +214,8 @@ lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面�
 | `scripts/cmpfx.py` | 兩個檔的 fx 行比對（多重集合） |
 | `scripts/verify.py` | `env` / 可套用 / 冪等 |
 | `scripts/bpm.py` | 估 BPM 與第一拍 `B0` |
-| `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k` |
-| `scripts/align.py` | 音訊對位器：人聲起音＋旋律變化＋Viterbi，產生 `\k` 初稿 |
+| `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k`；`--vocal` 只看人聲、`--ass` 疊上檔裡的詞起點 |
+| `scripts/align.py` | 音訊對位器：在既有的大概位置附近找起音，修 `\k` 初稿（會自己標出不可信的行） |
 
 每支都有 `-h`，docstring 就是它的文件。
 
