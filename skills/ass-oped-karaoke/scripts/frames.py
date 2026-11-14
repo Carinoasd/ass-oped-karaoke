@@ -121,6 +121,15 @@ def pick_extremes(samples: list[tuple[float, float]], windows: list[tuple[float,
     return max(pool, key=lambda p: p[1]), min(pool, key=lambda p: p[1])
 
 
+def frame_seconds(video: Path, fps: str | None) -> float:
+    """一格的長度（秒）。讀不到幀率時用 0.05（比 24fps 的一格略長，判斷只會更寬鬆）。"""
+    try:
+        fr = oped.framerate_of(video, fps)
+        return (fr.time_at_frame(1, "start") - fr.time_at_frame(0, "start")) / 1000 or 0.05
+    except (Exception, SystemExit):
+        return 0.05
+
+
 def grab(video: Path, times: list[float], work: Path, *, sub: str | None, crop: str | None, scale: float) -> list[Path]:
     out: list[Path] = []
     for i, t in enumerate(times):
@@ -225,12 +234,16 @@ def main() -> int:
             times += [tb, td]
             labels += [f"bright Y={yb:.0f} {tb:.3f}s", f"dark Y={yd:.0f} {td:.3f}s"]
         if a.ass:
-            # 取的每一格上都沒有任何字幕在顯示，多半是時間軸沒對上（位移方向打反、-t 給成另一條時間軸的秒數）
+            # 啟發式：取的每一格看起來都沒有字幕，多半是時間軸沒對上（位移方向打反、-t 給成另一條時間軸的秒數）。
+            # 真正被燒的是 ffmpeg 在 t 之後選到的那一格，不一定剛好是 t，所以起訖各放寬一格：
+            # 邊界上寧可漏報，也不要對「圖上明明有字」的那一格誤報。
             shown = [(e.start / 1000, e.end / 1000) for e in oped.load(work / "s.ass").events if not e.comment]
-            if shown and not any(s <= t < e for t in times for s, e in shown):
+            fd = frame_seconds(video, a.fps)
+            if shown and not any(s - fd <= t < e + fd for t in times for s, e in shown):
                 print(
-                    f"警告：取的 {len(times)} 格上都沒有字幕在顯示（字幕在 {min(s for s, _ in shown):.2f}–"
-                    f"{max(e for _, e in shown):.2f} 秒）。檢查 --shift 的正負號，以及 -t 是不是影片自己的時間。",
+                    f"注意：取的 {len(times)} 格看起來都不在字幕顯示的時間內（字幕在 {min(s for s, _ in shown):.2f}–"
+                    f"{max(e for _, e in shown):.2f} 秒），圖上可能沒有字。"
+                    "如果是這樣，檢查 --shift 的正負號，以及 -t 是不是影片自己的時間。",
                     file=sys.stderr,
                 )
             if a.font_dir:
