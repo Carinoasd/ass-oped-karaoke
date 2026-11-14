@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: verify-before-delivery
+expected_outcome: |
+  跑 skill 的 verify.py（或等價的檢查）得到三項結果：可套用 OK（validation 通過）、冪等 OK、
+  但「最新」NO——檔案裡的 fx 行和重新套用的結果不同（code 行被改過卻沒有重新渲染）。
+  然後重新套用模板存檔，再驗一次確認三項都過，並把這件事說清楚。
+context:
+  scaffold_script: place-files.sh

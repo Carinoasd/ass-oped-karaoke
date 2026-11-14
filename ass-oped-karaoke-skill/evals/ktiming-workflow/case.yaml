@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: ktiming-workflow
+expected_outcome: |
+  給出 skill 的時間流程：先用 bpm.py 量 BPM 與第一拍 B0，必要時用 spec.py 用眼睛對，
+  再用 align.py 產生初稿（並強調那只是初稿、確認過的詞要 --pin、寫回一定要 --only），
+  中文行不要重跑對位而是用 ktime.py copy 從日文行複製。
+  也應該提到來源行一定要有 \k（沒有 \k 的行只有一個長度 0 的音節，noblank 會跳過）。

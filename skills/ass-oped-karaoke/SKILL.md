@@ -1,0 +1,204 @@
+---
+name: ass-oped-karaoke
+description: 用 Aegisub kara-templater 做動畫 OP／ED 的卡拉OK特效字幕（歌詞特效＋曲名 credit）：決定 \k 逐詞時間、把每句的效果與資料放進 Name 欄位與 inline fx、把 Lua 特效原始碼同步進 .ass 的 code／template 行、用 aegisub_render 的 Python API 套用模板並渲染，再做 lite／NCOP-NCED／繁簡衍生版與驗證（冪等、fx 行比對、燒字取幀目視）。看到「OP/ED 卡拉OK特效」「kfx」「片頭片尾特效字幕」「歌詞逐字特效」「曲名 credit 排版」「NCOP/NCED 版字幕」「lite 版特效」「\k 時間對不準／要對位」「BPM 拍點」「把 Lua 寫進 code once 行」「套模板後要驗證畫面沒變」「燒字截圖檢查」這類需求就用這個 skill，即使沒提到 kara-templater。只要讀懂或重構既有特效（不是從頭做一首），用 kara-templater-decouple。
+---
+
+# OP／ED 卡拉OK特效字幕
+
+## 這個 skill 解決什麼
+
+一首 OP 或 ED，要交出的通常不是一個檔，而是一組：本篇時間軸的完整版、lite 版、NCOP／NCED 版
+（多了曲名 credit）、有時還有繁簡兩份。它們共用同一份歌詞、同一份 `\k`、同一套 Lua 特效，
+只差在模板清單、時間軸與 credit。這個 skill 把這件事做成可重複的流程：
+
+**Lua 原始碼 ＋ 每句的資料（Name 欄位／inline fx／樣式） → 組進 .ass 的 code／template 行 →
+用 `aegisub_render` 套用模板 → 驗證（冪等、fx 行比對、燒字取幀） → 衍生 lite／NC／繁簡。**
+
+它整合了三個實際做完的專案的做法與踩過的坑，所有和字幕檔、渲染、量字、時間軸、影格有關的事
+一律走 **`aegisub_render` 的 Python API**，不再自己 `split(",", 9)`、不再呼叫 `aegisub-render.exe`。
+
+## 四條心法（違反它們就會在第三次改稿時付出代價）
+
+1. **資料放在欄位，不要寫死在 code 行。** 位置、顏色、分組、節點、倍率寫在來源行的 **Name 欄位**，
+   重音詞／換色詞用 **inline fx**（`{\k42\-salt}`），字型字號字距邊界用**樣式**，
+   「這句有哪些裝飾」用 **fxgroup**。code 行只留排版規則與設計常數。模板**不該認得任何一句歌詞的文字**。
+2. **能推算的就不要手寫。**（頂部組的位置由底部鏡像推算、credit 路線 x 由該區第一行推算、
+   字寬一律量出來。）手寫的數字會在換集數、換字型、換畫面時全部過期。
+3. **交付的 .ass 本身就是來源**，但 Lua 另外留一份可讀版，用 `luasync.py check` 證明兩者逐字一致。
+   壓成一行的 code 行沒有人改得動；只有可讀版有版本控制的價值。
+4. **每次改完都要驗證三件事**：validation 通過（不靠 force）、重新套用逐位元組相同（冪等）、
+   fx 行與改動前的差異符合預期（重構時應為 0）。另外燒在影片上取幀目視。
+
+## 要交什麼（預設範圍，不要自己加碼）
+
+**預設只做使用者手上有的那幾首：OP 與 ED 各一份本篇時間軸的完整版，而且不一定兩個都有**
+——只有 OP 就只做 OP，只有 ED 就只做 ED。沒有被要求就不要多做版本：
+
+| 版本 | 什麼時候做 |
+| --- | --- |
+| OP／ED 完整版（本篇時間軸） | **預設**。有幾首做幾首 |
+| lite 版 | **只有在使用者抱怨太複雜／太吃效能、要一個簡化版時**才做。不要預先生成 |
+| NCOP／NCED 版 | **只有在原始字幕本身就帶著曲名 credit 時**才主動做（那表示 credit 要有地方放）；否則等使用者指示 |
+| 繁簡兩份 | 只有在這個流程本來就有繁簡轉換時 |
+
+多做一個版本就多一份要跟著改、跟著驗證的東西。不確定就問，不要預設全做。
+
+## 專案骨架
+
+一首歌一個資料夾，`fx-build/`（或 `scripts/`）放產生器，交付檔放上層：
+
+```
+<work>/
+  op.mp4  ed.mp4                         影片（有 NC 版時再加 ncop.mp4／nced.mp4）
+  <slug>_op_kfx.ass        交付：本篇時間軸、完整版（預設就只有這些）
+  <slug>_op_kfx_lite.ass   只有被要求簡化版時才有
+  <slug>_op_ncop.ass       只有要做 NC 版時才有（NCOP 時間軸 ＋ 曲名 credit）
+  fx-build/
+    template.lua / lua_*.lua   特效原始碼（可讀版，真正在維護的東西）
+    ktiming.py                 逐詞 \k 時間表（可直接改數字）
+    fxmap.py                   每句用哪個效果 → Name 欄位；單詞的 \-fx
+    build.py                   組裝：以上三者 → 交付的 .ass，再渲染
+```
+
+`scripts/` 底下是這個 skill 自帶、**與作品無關**的工具；作品自己的 `template.lua`、`ktiming.py`、
+`fxmap.py` 留在作品資料夾。先讀 `references/workflow.md`，它是這些工具串起來的順序。
+
+## 流程
+
+### 0. 先確認環境與素材
+
+```bash
+python -X utf8 scripts/verify.py env          # aegisub_render、Aegisub 安裝、ffmpeg、字型目錄
+```
+
+素材清單：原始歌詞 .ass（日文／中文行、時間已對正片）、正片、原片的 staff 字幕畫面
+（設計依據，見第 1 步）、特殊字型；要做 NC 版時才需要 NCOP／NCED。
+
+**順便看一件事**：原始字幕裡有沒有曲名 credit（オープニングテーマ／片頭曲、作詞作曲、演唱者那幾行）。
+有的話就是在告訴你「這份要壓在 NC 上」，NC 版可以主動做；沒有的話不要自作主張（見「要交什麼」）。
+
+### 1. 設計之前先看原片
+
+特效不該憑空設計。原片的 staff 字幕、標題 logo、片中的美術語彙就是設計來源：顏色、字型、
+線條、進退場節奏照著它們做，成品才會像同一部作品。用取幀工具把那幾格拉出來量：
+
+```bash
+python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 280:260:420:560
+```
+
+把「這個特效在模仿畫面上的什麼」寫進 memory bank 的 productContext，否則下一次改稿會把它改掉。
+
+### 2. 歌詞行與 `\k`
+
+來源行是 `Effect=karaoke` 的 Comment 行，Name 欄位帶效果名與資料。逐詞 `\k` 有三條路：
+
+- 手打（在 Aegisub 裡調，最準，`--keep-timing` 會保留）；
+- 拍點推算：`scripts/bpm.py` 估 BPM 與第一拍，詞落在格點上；
+- 音訊對位：`scripts/align.py`（人聲起音＋旋律變化＋Viterbi），只能算初稿，聽過再把確認的詞 pin 住。
+
+細節與陷阱見 `references/timing.md`。**沒有 `\k` 的行只有一個長度 0 的音節**，`noblank` 會把它
+當空白跳過，所以來源行一律要有 `{\k…}`。
+
+**只用來切段、不用來切軸的 `\k`，數值取「一幀的毫秒數」四捨五入到整數**（`round(1000/fps)`）：
+
+| fps | `\k` | fps | `\k` |
+| --- | --- | --- | --- |
+| 24000/1001、24 | `\k42` | 30000/1001、30 | `\k33` |
+| 25 | `\k40` | 50 | `\k20` |
+| 60000/1001、60 | `\k17` | 23.976 以外的怪幀率 | 自己算 `round(1000/fps)` |
+
+所以逐字切段寫成 `{\k42\-n}字`（24000/1001）或 `{\k33\-n}字`（30000/1001）。
+換片源幀率時這個數字要跟著換——整首用同一個值，看到混用就是有人複製貼上忘了改。
+
+### 3. 把資料放進欄位
+
+`references/fields.md` 是規格：Name 欄位的迷你語言（`credit jp an=8 x=420 y=283 1c=&HFFFFFF&`）、
+inline fx、fxgroup 開關、樣式怎麼分。**先決定資料放哪裡再寫 Lua**，反過來做一定會寫死。
+
+### 4. 寫 Lua，再同步進 .ass
+
+Lua 以區塊分段，每塊壓成一行 `code once`／`code line all`／`template line`。兩種分段方言
+（`--@` 與 `--@@ <Effect> | <區段名>`）、壓縮規則、遞移裁剪（lite 版只帶用得到的定義）、命名規則
+見 `references/lua-layout.md`。
+
+```bash
+python -X utf8 scripts/luasync.py check  op_kfx.ass --lua fx-build/op.lua     # .lua 與檔內 code 行是否逐字一致
+python -X utf8 scripts/luasync.py apply  op_kfx.ass --lua fx-build/op.lua     # 寫回 code 行
+python -X utf8 scripts/luasync.py extract op_kfx.ass -o fx-build/op.lua       # 反向：從交付檔還原可讀版
+```
+
+`template`／`code` 行必須排在 `[Events]` 的**前 50 行內**，否則 kara-templater 判定巨集不可用。
+
+### 5. 組裝與渲染
+
+```bash
+python -X utf8 scripts/build.py op_kfx.ass --lua fx-build/op.lua --render   # 換模板行＋渲染
+python -X utf8 scripts/build.py op_kfx.ass --render --keep-timing           # 保留手調的 \k
+```
+
+渲染一律走 `aegisub_render` 的 Python API（`ScriptRender` 就地套用，或 `render()` 連檔案一起處理），
+**不要**呼叫 `aegisub-render.exe`：那是給 shell 用的包裝，在 Python 裡多一次程序啟動又拿不到錯誤物件。
+
+### 6. 驗證
+
+```bash
+python -X utf8 scripts/verify.py op_kfx.ass             # 可套用 ＋ 冪等 ＋ fx 行是不是最新的
+python -X utf8 scripts/cmpfx.py old.ass op_kfx.ass      # 重構後證明畫面沒變，理想 0 差異
+python -X utf8 scripts/frames.py shot.png --ass op_kfx.ass --video ncop.mp4 --shift -1678 -t 15 59
+```
+
+`--shift` 接受時間戳或影格數（和 `macro offset` 同一套語法），所以把本篇時間軸的交付檔直接燒在
+NC 影片上檢查不需要先產生中間檔。
+
+### 7. 衍生版（**有條件才做**，見上面「要交什麼」）
+
+lite 要等使用者說太複雜；NC 版在原始字幕本身帶 credit 時可以主動做，否則等指示。
+
+```bash
+python -X utf8 scripts/variants.py nc   op_kfx.ass -o op_ncop.ass --shift -0:03:03.97 --video ncop.mp4
+python -X utf8 scripts/variants.py lite op_kfx.ass -o op_kfx_lite.ass --lua fx-build/op.lua --templates lite
+python -X utf8 scripts/variants.py lang op_kfx.ass --check     # 繁簡孿生行的 +TC/+SC 後綴檢查
+```
+
+NC 版要連 code 行裡的拍點原點一起平移（`--const B0`），這是最容易漏掉的一件事。
+lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面，不要複製一份程式碼。
+三種衍生版的完整規則見 `references/variants.md`。
+
+### 8. 交接
+
+每首歌都值得一份 memory bank（`/init-memory-bank`）。**一定要寫進去的**：設計在模仿畫面上的什麼、
+量測值怎麼來的、Name 欄位的規格表、使用者明確說過的偏好、以及試過但不行的做法。
+
+## 工具速查
+
+| 工具 | 用途 |
+| --- | --- |
+| `scripts/oped.py` | 共用函式庫：讀寫 .ass、行分類、Name 欄位解析、渲染、影片解析（其他工具都 import 它） |
+| `scripts/luasync.py` | Lua ↔ `code` 行：`check` / `apply` / `extract` |
+| `scripts/build.py` | 換掉 code／template 行、注入 `\k`、渲染 |
+| `scripts/ktime.py` | `\k` 時間表的讀出與寫回（`extract` / `apply` / `shift`） |
+| `scripts/variants.py` | `nc` / `lite` / `lang` 三種衍生版 |
+| `scripts/measure.py` | 量字：`measure_text()`（排版框與字身框）；`--ink` 用 libass 實際畫出來複驗 |
+| `scripts/frames.py` | 取幀：燒字截圖、連續張拼圖、`--shift` 燒在 NC 版上 |
+| `scripts/cmpfx.py` | 兩個檔的 fx 行比對（多重集合） |
+| `scripts/verify.py` | `env` / 可套用 / 冪等 |
+| `scripts/bpm.py` | 估 BPM 與第一拍 `B0` |
+| `scripts/spec.py` | 頻譜圖＋拍點格線，用眼睛對 `\k` |
+| `scripts/align.py` | 音訊對位器：人聲起音＋旋律變化＋Viterbi，產生 `\k` 初稿 |
+
+每支都有 `-h`，docstring 就是它的文件。
+
+`assets/example/` 是一個**能真的跑**的最小骨架（兩句虛構歌詞、一份 Lua、兩張模板清單），
+用來試工具或示範寫法；要看「資料放欄位」實際長什麼樣子就讀它。
+
+## references
+
+| 檔案 | 內容 |
+| --- | --- |
+| `references/workflow.md` | 完整流程、資料流圖、一次改稿要跑哪些指令 |
+| `references/fields.md` | Name 欄位迷你語言、inline fx、fxgroup、樣式分工（**動手前必讀**） |
+| `references/lua-layout.md` | Lua 分段與壓縮、兩種方言、遞移裁剪、命名規則、覆寫機制 |
+| `references/timing.md` | `\k` 時間：BPM、頻譜、對位器、節拍格點、常見錯誤 |
+| `references/variants.md` | lite／NC／繁簡三種衍生版的規則 |
+| `references/api.md` | `aegisub_render` Python API 對照表：哪件事該用哪個函式（**取代所有手寫解析**） |
+| `references/pitfalls.md` | libass、kara-templater／karaskel、ffmpeg、編碼與 shell 的坑（**動手前必讀**） |

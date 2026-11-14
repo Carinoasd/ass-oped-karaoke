@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: real-slot-3
+expected_outcome: |
+  從影片做出一份可以交的 kfx：設計依據看得出來是從原片畫面來的（取幀量過，不是憑空想的）、
+  逐詞 \k 有實際對過音訊（bpm/spec/align，中文行從日文行複製）、資料放在 Name 欄位與 inline fx
+  而不是寫死在 code 行、Lua 有留可讀版並和檔內 code 行一致、
+  最後回報驗證結果（validation 通過、重新套用逐位元組相同）並附燒在影片上的截圖。
+  只做被要求的那一首：沒被要求就不要順手生 lite 版或 NC 版。
+context:
+  scaffold_script: place-files.sh

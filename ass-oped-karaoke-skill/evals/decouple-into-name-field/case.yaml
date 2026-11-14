@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: decouple-into-name-field
+expected_outcome: |
+  指出行號索引是問題根源，把座標與顏色搬到**來源行的 Name 欄位**（例如 `credit jp an=8 x=960 y=283 1c=&H2A80F0&`），
+  用 Name 欄位的迷你語言解析（skill 的 parse_name 或 Lua 端等價的 gmatch），
+  並提到：Name 欄位不能有逗號、能推算的不要手寫、換色詞可以用 inline fx、
+  整組裝飾的開關用 fxgroup。最後提醒改完要用 fx 行比對證明畫面沒變。

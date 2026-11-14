@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: luasync-sync-and-render
+expected_outcome: |
+  用 skill 的 luasync.py（或 build.py）比對出 code once 行與 demo.lua 不同，把 DEMO_POP = 135
+  同步進 demo_op.built.ass，再以 aegisub_render 套用卡拉OK模板重建 fx 行，最後跑驗證
+  （validation 通過、重新套用逐位元組相同）並回報結果。
+  不應該自己寫 ASS 解析器、也不應該手動把 Lua 壓成一行貼進檔案。
+context:
+  scaffold_script: place-files.sh
