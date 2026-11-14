@@ -96,6 +96,11 @@ python -X utf8 scripts/verify.py env          # aegisub_render、Aegisub 安裝�
 python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 280:260:420:560
 ```
 
+配色只是一半。再找出這支片**最有辨識度的視覺特徵**——質感（色散、手繪筆觸、膠片顆粒）、
+動態（動態模糊、彈跳）、鏡頭語言（硬切、急推）——在特效裡至少用上一處；只抄配色的成品可讀，
+但看起來像任何一部作品的字幕。同時要克制：畫面本來就很滿的片不要再堆粒子，主歌收、副歌放。
+做法與例子見 `references/workflow.md` 的「看原片」。
+
 把「這個特效在模仿畫面上的什麼」寫進 memory bank 的 productContext，否則下一次改稿會把它改掉。
 
 ### 2. 歌詞行與 `\k`
@@ -147,6 +152,10 @@ python -X utf8 scripts/frames.py out.png --video ep01.mp4 -t 0:03:55.693 --crop 
 `references/fields.md` 是規格：Name 欄位的迷你語言（`credit jp an=8 x=420 y=283 1c=&HFFFFFF&`）、
 inline fx、fxgroup 開關、樣式怎麼分。**先決定資料放哪裡再寫 Lua**，反過來做一定會寫死。
 
+場景差異大的片，唱過／高亮色可以逐句不同，但那是**每句的資料**：寫在該句的 Name 欄位，
+對著那句出現時的畫面挑色、確認對比。不要照句子的序號輪流套調色盤——顏色會和畫面無關，
+碰巧撞色（粉紅字壓在粉紅頭髮上），插一句後面全部錯位。
+
 ### 4. 寫 Lua，再同步進 .ass
 
 Lua 以區塊分段，每塊壓成一行 `code once`／`code line all`／`template line`。兩種分段方言
@@ -183,6 +192,11 @@ python -X utf8 scripts/frames.py shot.png --ass op_kfx.ass --video ncop.mp4 --sh
 `--shift` 接受時間戳或影格數（和 `macro offset` 同一套語法），所以把本篇時間軸的交付檔直接燒在
 NC 影片上檢查不需要先產生中間檔。
 
+**可讀性要在最難的畫面上看**：`frames.py extremes.png --ass op_kfx.ass --video ncop.mp4 --extremes`
+自動挑出唱著歌時全片最亮與最暗的一格燒字。兩格上沒唱到的字與唱過的字都要讀得出來；
+讀不出來先加深外框或光暈，不要只換字身顏色。這是好不好看的判斷，最後由使用者決定：
+回報時把這兩格放在最前面，不要只寫「看得清楚」——亮底上的白字柔邊，自己看常會覺得沒問題。
+
 `verify.py` 的結束碼：0 全過、1 有項目沒過、2「最新」無法判定（這台機器缺樣式的字型）。
 遇到 2 **不要為了變綠就重新渲染覆蓋交付檔**——那會把正確的座標換成替代字型的座標；
 先把字型補上（或 `--font-dir`）再驗。
@@ -218,7 +232,7 @@ lite 版共用同一份 Lua，用遞移裁剪把沒用到的定義留在外面�
 | `scripts/ktime.py` | `\k` 時間表的讀出與寫回（`extract` / `apply` / `shift`） |
 | `scripts/variants.py` | `nc` / `lite` / `lang` 三種衍生版 |
 | `scripts/measure.py` | 量字：`measure_text()`（排版框與字身框）；`--ink` 用 libass 實際畫出來複驗 |
-| `scripts/frames.py` | 取幀：燒字截圖、連續張拼圖、`--shift` 燒在 NC 版上 |
+| `scripts/frames.py` | 取幀：燒字截圖、連續張拼圖、`--shift` 燒在 NC 版上、`--extremes` 挑最亮／最暗的一格 |
 | `scripts/cmpfx.py` | 兩個檔的 fx 行比對（多重集合） |
 | `scripts/verify.py` | `env` / 可套用 / 冪等 |
 | `scripts/bpm.py` | 估 BPM 與第一拍 `B0` |

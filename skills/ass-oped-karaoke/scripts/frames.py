@@ -15,6 +15,15 @@
     # 只看畫面不燒字（量原片的 staff 字幕、找設計依據時）
     python -X utf8 frames.py ref.png --video ep01.mp4 -t 0:03:55.693 --crop 280:260:420:560
 
+    # 可讀性檢查：自動挑出最亮與最暗的一格，燒字拼成一張（交付前必看）
+    python -X utf8 frames.py extremes.png --ass op_kfx.ass --video ncop.mp4 --extremes
+
+`--extremes [每秒取樣數]`（預設每秒 1 格）用 ffmpeg 把影片縮成小灰階圖、算每格的平均亮度，
+把最亮與最暗那兩格加進要取的時間點（可和 -t 等一起用），時間與亮度（0–255）印在 stdout 與圖的標籤上。
+有 `--ass` 時只在「有歌詞正唱到一半」的時間裡挑（卡拉OK來源行的中間一半；檔裡沒有來源行就用
+有字幕顯示的區間，都以平移後的時間為準）——否則最暗的多半是片頭片尾的黑場，上面沒有字，等於沒檢查。
+亮度是整個畫面的平均，字幕那一帶比較亮或比較暗的片段可能沒被挑到，必要時用 -t 補幾格。
+
 影片預設取字幕檔連結的 Video File（和 Aegisub 一樣相對於字幕檔解析），可用 `--video` 覆蓋。
 `--shift` 的語法同 `aegisub-render macro offset`：`[+-]影格數`（要 `--fps` 或能讀時間碼的影片）
 或 `[+-][[[hh:]mm:]ss].ms`；平移在記憶體裡做，不會動到你的檔案。
@@ -25,6 +34,7 @@
 """
 
 import argparse
+import math
 import shutil
 import subprocess
 import sys
@@ -64,6 +74,51 @@ def prepare_ass(ass_path: Path, shift: str | None, fps: str | None, video: Path 
                 "位移的方向或數值不對，或這份字幕不在你以為的那條時間軸上。"
             )
     dest.write_bytes(ass.serialize())
+
+
+def luma_samples(video: Path, rate: float) -> list[tuple[float, float]]:
+    """約每 1/rate 秒取一格，回傳 [(該格真正的時間（秒）, 平均亮度 Y)]。只用 ffmpeg，不需要 numpy。
+
+    用 select 取「距上一個選中的格至少 1/rate 秒」的那一格，時間直接讀那一格的 pts；
+    不用 fps 濾鏡，因為它輸出的第 N 格其實是 N 秒後半秒內的某一格，拿 N 去燒字會燒到另一個畫面。
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        vf = (f"select='isnan(prev_selected_t)+gte(t-prev_selected_t\\,{1 / rate:.6f})',"
+              "scale=64:36:flags=area,signalstats,"
+              "metadata=print:key=lavfi.signalstats.YAVG:file=y.txt")
+        cmd = ["ffmpeg", "-hide_banner", "-v", "error", "-copyts", "-i", str(video), "-an",
+               "-vf", vf, "-fps_mode", "passthrough", "-f", "null", "-"]
+        subprocess.run(cmd, check=True, cwd=tmp)
+        out: list[tuple[float, float]] = []
+        t = None
+        for ln in (Path(tmp) / "y.txt").read_text(encoding="utf-8").splitlines():
+            if "pts_time:" in ln:
+                t = float(ln.split("pts_time:")[1].split()[0])
+            elif ln.startswith("lavfi.signalstats.YAVG=") and t is not None:
+                out.append((math.floor(t * 1000) / 1000, float(ln.split("=")[1])))
+        return out
+
+
+def lyric_windows(ass_path: Path) -> list[tuple[float, float]]:
+    """「正唱到一半」的區間（秒）：卡拉OK來源行的中間一半；沒有來源行就用有字幕顯示的區間。"""
+    evs = oped.load(ass_path).events
+    kara = [e for e in evs if oped.is_karaoke(e)]
+    if kara:
+        return [(e.start / 1000 + (e.end - e.start) / 4000, e.end / 1000 - (e.end - e.start) / 4000) for e in kara]
+    return [(e.start / 1000, e.end / 1000) for e in evs if not e.comment]
+
+
+def pick_extremes(samples: list[tuple[float, float]], windows: list[tuple[float, float]] | None):
+    """回傳 ((最亮秒, 亮度), (最暗秒, 亮度))；windows 給了就只在裡面挑。"""
+    pool = samples
+    if windows is not None:
+        pool = [(t, y) for t, y in samples if any(s <= t <= e for s, e in windows)]
+        if not pool:
+            print("警告：取樣點沒有一個落在歌詞正在唱的區間裡，改從全片挑（檢查 --shift）", file=sys.stderr)
+            pool = samples
+    if not pool:
+        raise SystemExit("讀不到任何影格，無法挑最亮／最暗")
+    return max(pool, key=lambda p: p[1]), min(pool, key=lambda p: p[1])
 
 
 def grab(video: Path, times: list[float], work: Path, *, sub: str | None, crop: str | None, scale: float) -> list[Path]:
@@ -119,6 +174,8 @@ def main() -> int:
     ap.add_argument("-t", "--times", nargs="+", default=[], help="時間點（秒或 h:mm:ss.cc）")
     ap.add_argument("--frame", nargs="+", type=int, default=[], help="影格編號（用影片時間碼換算）")
     ap.add_argument("--sheet", nargs=3, metavar=("START", "DUR", "FPS"), help="連續張：起點、長度(秒)、每秒張數")
+    ap.add_argument("--extremes", nargs="?", type=float, const=1.0, metavar="RATE",
+                    help="加上全片最亮與最暗的一格（每秒取樣 RATE 格，預設 1；有 --ass 時只在唱到一半的區間挑）")
     ap.add_argument("--shift", help="先平移字幕：[+-]影格數 或 [+-][[[hh:]mm:]ss].ms")
     ap.add_argument("--fps", help="影格換算用的 fps（24000/1001）")
     ap.add_argument("--cols", type=int, default=2)
@@ -152,8 +209,8 @@ def main() -> int:
             t = start + i / fps
             times.append(t)
             labels.append(f"{t:.3f}s")
-    if not times:
-        ap.error("需要 -t／--frame／--sheet 其中之一")
+    if not times and a.extremes is None:
+        ap.error("需要 -t／--frame／--sheet／--extremes 其中之一")
 
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
@@ -161,6 +218,13 @@ def main() -> int:
         if a.ass:
             prepare_ass(a.ass, a.shift, a.fps, video, work / "s.ass")
             sub = "s.ass"
+        if a.extremes is not None:
+            windows = lyric_windows(work / "s.ass") if a.ass else None
+            (tb, yb), (td, yd) = pick_extremes(luma_samples(video.resolve(), a.extremes), windows)
+            print(f"最亮 {tb:.3f}s（平均亮度 {yb:.0f}）  最暗 {td:.3f}s（平均亮度 {yd:.0f}）")
+            times += [tb, td]
+            labels += [f"bright Y={yb:.0f} {tb:.3f}s", f"dark Y={yd:.0f} {td:.3f}s"]
+        if a.ass:
             # 取的每一格上都沒有任何字幕在顯示，多半是時間軸沒對上（位移方向打反、-t 給成另一條時間軸的秒數）
             shown = [(e.start / 1000, e.end / 1000) for e in oped.load(work / "s.ass").events if not e.comment]
             if shown and not any(s <= t < e for t in times for s, e in shown):

@@ -107,3 +107,26 @@ local x = SHOTS[line.number][2]
 
 文字比對會在繁簡轉換、改錯字、換集數時壞掉；行號索引會在插入一行時全部錯位。
 前者改成 inline fx，後者改成 Name 欄位。
+
+### 同一個道理：逐句換色
+
+場景差異大的片（一句在夕陽、一句在夜空、一句壓在角色的粉紅頭髮上），唱過色逐句不同是好主意，
+但顏色要照「那句出現時的畫面」挑，所以它是那一句的資料：
+
+```
+OP main sung=&H5A2A10&           ← 背景是近白的天空：唱過色用深藍
+OP main sung=&H66D8FF& hi=&HFFF0A0&   ← 背景是夜景：用亮金，高亮詞用淡青
+OP main                          ← 沒寫就用 code 行的預設色
+```
+
+```lua
+function NAMEVAL(key, default)
+  return (' ' .. line.actor):match(' ' .. key .. '=(&H%x+&)') or default
+end
+```
+
+`NAMEVAL` 放在自己的 `code once` 區塊（全域函式，每個 code 行是各自執行的，`local` 別的區塊看不到），
+用的地方寫 `local sung = NAMEVAL('sung', OP_SUNG)`。
+
+不要寫成 `PALETTE[(line.i % #PALETTE) + 1]`：那是照序號輪替，和畫面無關，有的句子碰巧對比、
+有的撞色，而且插一句後面全部跟著換。每個 `sung=` 都要對著那句的畫面燒一格確認讀得出來。
