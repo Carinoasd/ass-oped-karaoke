@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv*/
+.align-cache/
+.falign-cache/
+# 真實插槽的影片不進版控（測試前自己放進 files/）
+/ass-oped-karaoke-skill/evals/*/files/*.mkv
+/ass-oped-karaoke-skill/evals/*/files/*.mp4
+/skills/ass-oped-karaoke/evals/
+/skills/ass-oped-karaoke/evals-real/

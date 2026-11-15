@@ -28,8 +28,8 @@ lite／NC／繁簡衍生、`\k` 時間（BPM／強制對位／頻譜／音訊對
 | 需要 | 說明 |
 | --- | --- |
 | Python 3.14 | **一律 `-X utf8`／`PYTHONUTF8=1`**（開發機 locale 是 cp950，不帶旗標會炸或靜默亂碼） |
-| `aegisub_render` | `python-aegisub-render` 這個 repo，以連結方式安裝：`uv add --editable <repo>`；或設環境變數 `AEGISUB_RENDER_ROOT=<repo>`（`scripts/oped.py` 會自己把它的 `src/` 加進 `sys.path`） |
-| 原生模組 | repo 裡 commit 的 `.pyd` 是給 CPython 3.14 / win_amd64 用的；傳過去的壓縮檔**沒有包含**它們，所以測試機要先自己編：`uv run --group build python native/build.py`（Linux／WSL 見 repo README） |
+| `aegisub_render` | `python-aegisub-render`（另一個專案，不在這個 repo 裡），以連結方式安裝：`uv add --editable <repo>`；或設環境變數 `AEGISUB_RENDER_ROOT=<repo>`（`scripts/oped.py` 會自己把它的 `src/` 加進 `sys.path`） |
+| 原生模組 | `python-aegisub-render` 裡 commit 的 `.pyd` 是給 CPython 3.14 / win_amd64 用的；傳過去的壓縮檔**沒有包含**它們，所以測試機要先自己編：`uv run --group build python native/build.py`（Linux／WSL 見該專案的 README） |
 | Aegisub 3.5.1 | 安裝目錄要有 `automation/autoload/kara-templater.lua`（預設 `C:\Program Files\Aegisub`，可用 `config.py` 或 `--config` 換） |
 | ffmpeg（含 libass） | 取幀（`frames.py`）、量像素（`measure.py --ink`）、頻譜（`spec.py`）、對位（`align.py`／`falign.py`）要用 |
 | numpy | `bpm.py`／`spec.py`／`align.py` 需要 |
